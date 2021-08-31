@@ -1,0 +1,30 @@
+---
+apiVersion: {{ include "storageclassversion" . }}
+kind: StorageClass
+metadata:
+  name: ionos-enterprise-ssd
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+    resources.gardener.cloud/delete-on-invalid-update: "true"
+provisioner: cloud.ionos.com
+volumeBindingMode: {{ .Values.volumeBindingMode }}
+reclaimPolicy: Delete
+allowVolumeExpansion: {{ .Values.allowVolumeExpansion }}
+parameters:
+  fsType: {{ .Values.fsType }}
+  type: SSD
+---
+apiVersion: {{ include "storageclassversion" . }}
+kind: StorageClass
+metadata:
+  name: ionos-enterprise-hdd
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+    resources.gardener.cloud/delete-on-invalid-update: "true"
+provisioner: cloud.ionos.com
+volumeBindingMode: {{ .Values.volumeBindingMode }}
+reclaimPolicy: Delete
+allowVolumeExpansion: {{ .Values.allowVolumeExpansion }}
+parameters:
+  fsType: {{ .Values.fsType }}
+  type: HDD

@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "name" . }}-logging-config
+  namespace: garden
+  labels:
+    extensions.gardener.cloud/configuration: logging
+data:
+  filter-kubernetes.conf: |
+    [FILTER]
+        Name                parser
+        Match               kubernetes.*machine-controller-manager*ionos-machine-controller-manager*
+        Key_Name            log
+        Parser              kubeapiserverParser
+        Reserve_Data        True
+
+    [FILTER]
+        Name                parser
+        Match               kubernetes.*ionos-csi-controller*ionos-csi*
+        Key_Name            log
+        Parser              kubeapiserverParser
+        Reserve_Data        True
+
+    [FILTER]
+        Name                rewrite_tag
+        Match               kubernetes.*
+        Rule                $tag ^kubernetes\.var\.log\.containers\.(ionos-csi-controller-.+?_.+?_ionos-csi) user-exposed.$TAG true
+        Emitter_Name        re_emitted-provider-ionos

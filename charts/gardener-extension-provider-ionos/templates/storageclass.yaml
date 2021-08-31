@@ -1,0 +1,17 @@
+{{- if eq .Values.gardener.seed.provider "ionos" }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.config.etcd.storage.className }}
+  labels:
+{{ include "labels" . | indent 4 }}
+  annotations:
+    resources.gardener.cloud/delete-on-invalid-update: "true"
+provisioner: csi.ionos.com
+allowVolumeExpansion: true
+parameters:
+{{- if .Values.gardener.seed.spec.provider.providerConfig.fsType }}
+  fsType: {{ .Values.gardener.seed.spec.provider.providerConfig.fsType }}
+{{- end }}
+  type: SSD
+{{- end }}

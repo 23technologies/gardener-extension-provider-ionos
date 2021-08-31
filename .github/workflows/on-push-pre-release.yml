@@ -1,0 +1,33 @@
+name: go:pre-release
+
+on:
+  push:
+    tags: 'v*'
+
+jobs:
+  create-pre-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout commit
+      uses: actions/checkout@v2
+    - name: Get the Git tag name
+      id: get-tag-name
+      run: echo ::set-output name=tag-name::${GITHUB_REF/refs\/tags\/v/}
+    - name: Update VERSION file
+      run: |-
+          echo "v${{ steps.get-tag-name.outputs.tag-name }}" > VERSION
+    - name: Create controller-registration.yaml
+      run: |-
+          vendor/github.com/gardener/gardener/hack/generate-controller-registration.sh provider-ionos charts/gardener-extension-provider-ionos VERSION controller-registration.yaml \
+          ControlPlane:ionos Infrastructure:ionos Worker:ionos
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.get-tag-name.outputs.tag-name }}
+        body: |-
+          # [gardener-extension-provider-ionos] v${{ steps.get-tag-name.outputs.tag-name }}
+        prerelease: true
+        files: controller-registration.yaml

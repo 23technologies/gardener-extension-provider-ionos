@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shoot--foobar--ionos
+  labels:
+    backup.gardener.cloud/provider: ionos
+    seed.gardener.cloud/provider: ionos
+    shoot.gardener.cloud/provider: ionos
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudprovider
+  namespace: shoot--foobar--ionos
+type: Opaque
+data:
+  ionosUser: ==
+  ionosPassword: ==
+  ionosCloudConf: eyJ1c2VybmFtZSI6IiIsInBhc3N3b3JkIjoiIn0K
+---
+apiVersion: extensions.gardener.cloud/v1alpha1
+kind: Cluster
+metadata:
+  name: shoot--foobar--ionos
+spec:
+  cloudProfile:
+    apiVersion: core.gardener.cloud/v1alpha1
+    kind: CloudProfile
+    spec:
+      regions:
+        - name: hel1
+          zones:
+          - name: hel1-dc2
+      providerConfig:
+        apiVersion: ionos.provider.extensions.gardener.cloud/v1alpha1
+        kind: CloudProfileConfig
+  seed:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: Seed
+    spec:
+      settings:
+        loadBalancerServices:
+          annotations:
+            load-balancer.hetzner.cloud/name: shoot--foobar--ionos
+            load-balancer.hetzner.cloud/location: hel1
+  shoot:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: Shoot
+    spec:
+      cloud:
+        ionos:
+          networks:
+            pods: 10.250.0.0/19
+      kubernetes:
+        version: 1.13.4
+      hibernation:
+        enabled: false
+    status:
+      lastOperation:
+        state: Succeeded
+---
+apiVersion: extensions.gardener.cloud/v1alpha1
+kind: ControlPlane
+metadata:
+  name: control-plane
+  namespace: shoot--foobar--ionos
+spec:
+  type: ionos
+  region: hel1
+  secretRef:
+    name: cloudprovider
+    namespace: shoot--foobar--ionos
+  providerConfig:
+    apiVersion: ionos.provider.extensions.gardener.cloud/v1alpha1
+    kind: ControlPlaneConfig
+    zone: hel1-dc2
+    cloudControllerManager:
+      featureGates:
+        CustomResourceValidation: true
+  infrastructureProviderStatus:
+    apiVersion: ionos.provider.extensions.gardener.cloud/v1alpha1
+    kind: InfrastructureStatus
+    networks:
+      floatingPool:
+        id: vpc-1234
+      subnets:
+      - purpose: nodes
+        id: subnetid

@@ -1,0 +1,3 @@
+token: token
+region: k8s-region
+zone: k8s-zone

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-provider-config
+  namespace: {{ .Release.Namespace }}
+data:
+  cloudprovider.conf: |
+    global:
+      token: {{ .Values.token }}
+
+    {{- if (or .Values.region .Values.zone) }}
+    labels:
+    {{- if .Values.region }}
+      region: "{{ .Values.region }}"
+    {{- end }}
+    {{- if .Values.zZone }}
+      zone: "{{ .Values.zone }}"
+    {{- end }}
+    {{- end }}

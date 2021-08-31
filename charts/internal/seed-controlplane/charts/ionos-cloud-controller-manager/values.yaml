@@ -1,0 +1,22 @@
+replicas: 1
+clusterName: shoot-foo-bar
+kubernetesVersion: 1.7.5
+podAnnotations: {}
+podLabels: {}
+podDatacenterID: "01234567-89ab-4def-0123-c56789abcdef"
+featureGates: {}
+  # CustomResourceValidation: true
+  # RotateKubeletServerCertificate: false
+images:
+  ionos-cloud-controller-manager: image-repository:image-tag
+loadBalancer:
+  disableIPv6: true
+  disablePrivateIngress: true
+disableNetworkAttachedCheck: true
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

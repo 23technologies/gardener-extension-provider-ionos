@@ -1,0 +1,122 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shoot--foobar--ionos
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudprovider
+  namespace: shoot--foobar--ionos
+type: Opaque
+data:
+  ionosCloudConf: eyJ1c2VybmFtZSI6IiIsInBhc3N3b3JkIjoiIn0K
+  ionosPassword: ==
+  ionosUser: ==
+---
+apiVersion: extensions.gardener.cloud/v1alpha1
+kind: Cluster
+metadata:
+  name: shoot--foobar--ionos
+spec:
+  cloudProfile:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: CloudProfile
+    spec:
+      regions:
+      - name: hel1
+      machineTypes:
+        - name: small
+      providerConfig:
+        apiVersion: ionos.provider.extensions.gardener.cloud/v1alpha1
+        kind: CloudProfileConfig
+        regions:
+        - name: hel1
+        machineImages:
+          - name: ubuntu
+            versions:
+              - version: "20.04"
+        machineTypes:
+        - name: small
+  seed:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: Seed
+  shoot:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: Shoot
+    spec:
+      kubernetes:
+        version: 1.13.4
+      region: hel1
+      cloud:
+        ionos:
+          test: foo
+    status:
+      lastOperation:
+        state: Succeeded
+
+---
+apiVersion: extensions.gardener.cloud/v1alpha1
+kind: Infrastructure
+metadata:
+  name: infrastructure
+  namespace: shoot--foobar--ionos
+spec:
+  type: ionos
+  region: hel1
+  secretRef:
+    name: cloudprovider
+    namespace: shoot--foobar--ionos
+  providerConfig:
+    apiVersion: ionos.provider.extensions.gardener.cloud/v1alpha1
+    kind: InfrastructureConfig
+    dhcpServerConfiguration:
+      image:
+        name: ubuntu
+        version: "20.04"
+      cores: 1
+      memory: 1024
+      sshKey: ssh-rsa invalid
+      userData: |-
+        #cloud-config
+        package_update: true
+        packages:
+        - dnsmasq
+        runcmd:
+        - [ systemctl, restart, systemd-resolved ]
+        - [ systemctl, enable, dnsmasq ]
+        - [ systemctl, start, dnsmasq ]
+        write_files:
+        - path: /etc/systemd/resolved.conf
+          content: |-
+            [Resolve]
+            #DNS=
+            #FallbackDNS=
+            #Domains=
+            #LLMNR=no
+            #MulticastDNS=no
+            #DNSSEC=no
+            #DNSOverTLS=no
+            #Cache=no-negative
+            #DNSStubListener=yes
+            #ReadEtcHosts=yes
+            DNSStubListener=no
+        - path: /etc/dnsmasq.d/workers-network.conf
+          content: |-
+            bogus-priv
+            listen-address=127.0.0.1
+            listen-address=::1
+            listen-address=10.15.100.254
+            dhcp-range=10.15.100.0,10.15.100.253,12h
+      volumeSize: 10485760
+    floatingPool:
+      name: MY-FLOATING-POOL
+      size: 256
+    # floatingPoolSubnetName: my-floating-pool-subnet-name
+    networks:
+    # router:
+    #   id: 1234
+      workers: 10.15.100.0/24
+  sshPublicKey: AAAA

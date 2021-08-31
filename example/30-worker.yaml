@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudprovider
+  namespace: shoot--foobar--ionos
+type: Opaque
+data:
+    ionosUser: username
+    ionosPassword: password
+
+---
+apiVersion: extensions.gardener.cloud/v1alpha1
+kind: Cluster
+metadata:
+  name: shoot--foobar--ionos
+spec:
+  cloudProfile:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: CloudProfile
+    spec:
+      regions:
+      - name: hel1
+      machineTypes:
+        - name: small
+      providerConfig:
+        apiVersion: ionos.provider.extensions.gardener.cloud/v1alpha1
+        kind: CloudProfileConfig
+        regions:
+        - name: hel1
+        machineImages:
+          - name: ubuntu
+            versions:
+              - version: "20.04"
+        machineTypes:
+        - name: small
+
+  seed:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: Seed
+  shoot:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: Shoot
+    spec:
+      kubernetes:
+        version: 1.13.4
+      region: hel1
+      cloud:
+        ionos:
+          test: foo
+    status:
+      lastOperation:
+        state: Succeeded
+---
+apiVersion: extensions.gardener.cloud/v1alpha1
+kind: Worker
+metadata:
+  name: worker
+  namespace: shoot--foobar--ionos
+  annotations:
+    gardener.cloud/operation: reconcile
+spec:
+  type: ionos
+  region: hel1
+  infrastructureProviderStatus:
+    apiVersion: ionos.provider.extensions.gardener.cloud/v1alpha1
+    kind: InfrastructureStatus
+    floatingPoolName: MY-FLOATING-POOL
+  pools:
+    - name: machinepool
+      machineType: small
+      machineImage:
+        name: ubuntu
+        version: "20.04"
+      minimum: 1
+      maximum: 1
+      maxSurge: 1
+      maxUnavailable: 0
+      zones:
+      - hel1-dc2
+      userData: IyEvYmluL2Jhc2gKCmVjaG8gImhlbGxvIHdvcmxkIgo=
+  sshPublicKey: ZGF0YQo=
+  secretRef:
+    name: cloudprovider
+    namespace: shoot--foobar--ionos

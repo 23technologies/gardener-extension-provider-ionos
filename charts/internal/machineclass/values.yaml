@@ -1,0 +1,18 @@
+machineClasses:
+- name: class-1
+  datacenterID: 12345678-9abc-def0-1234-56789abcdef0
+  cluster: shoot--foobar--ionos
+  zone: us-las
+  cores: 1
+  memory: 1024
+  imageID: 01234567-89ab-4def-0123-c56789abcdef
+  sshKey: ssh-rsa invalid
+  networkIDs: {}
+  floatingPoolName: MY-FLOATING-POOL
+  secret:
+    ionosUser: username
+    ionosPassword: password
+    userData: IyEvYmluL2Jhc2gKCmVjaG8gImhlbGxvIHdvcmxkIgo=
+  tags:
+    mcm.gardener.cloud/cluster: shoot--foobar--ionos
+    mcm.gardener.cloud/role: node

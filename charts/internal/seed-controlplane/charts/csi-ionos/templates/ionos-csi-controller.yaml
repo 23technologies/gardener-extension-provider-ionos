@@ -1,0 +1,171 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: cloud.ionos.com
+spec:
+  attachRequired: true
+  fsGroupPolicy: ReadWriteOnceWithFSType
+  podInfoOnMount: true
+  requiresRepublish: false
+  storageCapacity: false
+  volumeLifecycleModes:
+    - Persistent
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ionos-csi-controller
+  namespace: {{ .Release.Namespace }}
+labels:
+  gardener.cloud/role: controlplane
+  app: kubernetes
+  role: csi-plugin-controller
+spec:
+  serviceName: ionos-csi-controller
+  replicas: {{ .Values.replicas }}
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
+  selector:
+    matchLabels:
+      app: ionos-csi-controller
+  template:
+    metadata:
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+      labels:
+        gardener.cloud/role: controlplane
+        app: ionos-csi-controller
+        role: ionos-csi
+        networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-public-networks: allowed
+        networking.gardener.cloud/to-private-networks: allowed
+        networking.gardener.cloud/to-shoot-apiserver: allowed
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: ionos-csi-attacher
+          image: {{ index .Values.images "csi-attacher" }}
+          args:
+            - "--v=4"
+            - "--timeout=300s"
+            - "--csi-address=$(ADDRESS)"
+            - "--leader-election"
+            - "--kubeconfig=/var/lib/csi-attacher/kubeconfig"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+{{- if .Values.resources.attacher }}
+          resources:
+{{ toYaml .Values.resources.attacher | indent 12 }}
+{{- end }}
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+            - name: csi-attacher
+              mountPath: /var/lib/csi-attacher
+{{- if .Values.resizerEnabled }}
+        - name: ionos-csi-resizer
+          image: {{ index .Values.images "csi-resizer" }}
+          args:
+            - "--v=4"
+            - "--csiTimeout=300s"
+            - "--csi-address=$(ADDRESS)"
+            - "--leader-election"
+            - --kubeconfig=/var/lib/csi-resizer/kubeconfig
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+{{- if .Values.resources.resizer }}
+          resources:
+{{ toYaml .Values.resources.resizer | indent 12 }}
+{{- end }}
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+            - name: csi-resizer
+              mountPath: /var/lib/csi-resizer
+{{- end }}
+        - name: ionos-csi-controller
+          image: {{ index .Values.images "csi-driver-controller" }}
+          env:
+            - name: KUBECONFIG
+              value: /var/lib/ionos-csi-controller/kubeconfig
+            - name: CSI_ENDPOINT
+              value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+            - name: IE_DRIVER_NAME
+              value: cloud.ionos.com
+            - name: IE_DRIVER_MODE
+              value: ControllerServer
+            - name: LOGGER_LEVEL
+              value: "{{ .Values.loggerLevel }}" # Options: DEVELOPMENT, PRODUCTION
+{{- if .Values.resources.controller }}
+          resources:
+{{ toYaml .Values.resources.controller | indent 12 }}
+{{- end }}
+          volumeMounts:
+            - mountPath: /var/lib/csi/sockets/pluginproxy/
+              name: socket-dir
+            - name: ionos-csi-controller
+              mountPath: /var/lib/ionos-csi-controller
+            - mountPath: /etc/ie-csi
+              name: ie-csi-dir
+              readOnly: true
+            - mountPath: /etc/ie-csi/clouds
+              name: clouds-dir
+              readOnly: true
+        - name: ionos-csi-provisioner
+          image: {{ index .Values.images "csi-provisioner" }}
+          args:
+            - "--v=4"
+            - "--timeout=300s"
+            - "--csi-address=$(ADDRESS)"
+            - "--feature-gates=Topology=true"
+            - "--strict-topology"
+            - "--enable-leader-election"
+            - "--leader-election-type=leases"
+            - "--kubeconfig=/var/lib/csi-provisioner/kubeconfig"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+{{- if .Values.resources.provisioner }}
+          resources:
+{{ toYaml .Values.resources.provisioner | indent 12 }}
+{{- end }}
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+            - name: csi-provisioner
+              mountPath: /var/lib/csi-provisioner
+      volumes:
+        - name: ionos-csi-controller
+          secret:
+            secretName: ionos-csi-controller
+        - name: csi-attacher
+          secret:
+            secretName: csi-attacher
+        - name: csi-provisioner
+          secret:
+            secretName: csi-provisioner
+        - name: csi-resizer
+          secret:
+            secretName: csi-resizer
+        - name: socket-dir
+          emptyDir: {}
+        - name: ie-csi-dir
+          secret:
+            secretName: ionos-csi
+            items:
+            - key: ionosCfg
+              path: "cfg.json"
+        - name: clouds-dir
+          secret:
+            secretName: ionos-csi
+            items:
+            - key: ionosCloudsConf
+              path: {{ .Values.csiDatacenterID | quote }}
