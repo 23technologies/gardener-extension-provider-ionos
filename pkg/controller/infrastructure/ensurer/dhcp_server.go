@@ -32,7 +32,7 @@ import (
 )
 
 // Constant ionosPasswordGeneratedLength is the length of the generated random password
-const ionosPasswordGeneratedLength = 32
+const ionosPasswordGeneratedLength = 500
 // Constant ionosVolumeType is the volume type
 const ionosVolumeType = "SSD"
 
@@ -60,7 +60,17 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 		seededRand := rand.New(rand.NewSource(time.Now().Unix()))
 
 		for i := 0; i < ionosPasswordGeneratedLength; i++ {
-			passwordBuilder.WriteString(string(32 + seededRand.Intn(94)))
+			randomChar := seededRand.Intn(62)
+
+			if randomChar > 35 {
+				randomChar += 13
+			} else if randomChar > 9 {
+				randomChar += 7
+			}
+
+			randomChar += 48
+
+			passwordBuilder.WriteString(string(randomChar))
 		}
 
 		password = passwordBuilder.String()
