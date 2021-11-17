@@ -18,14 +18,11 @@ limitations under the License.
 package mock
 
 import (
-	"fmt"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,9 +37,6 @@ const (
 		"networkIDs": {}
 	}`
 	TestWorkerMachineCPUs = 1
-	TestWorkerMachineImageID = "01234567-89ab-4def-0123-c56789abcdef"
-	TestWorkerMachineImageName = "test"
-	TestWorkerMachineImageVersion = "1.0"
 	TestWorkerMachineMemoryInMB = 1024
 	TestWorkerMachineType = "small"
 	TestWorkerName = "ionos"
@@ -76,8 +70,8 @@ func NewWorker() *v1alpha1.Worker {
 					MaxUnavailable: intstr.FromInt(2),
 					MachineType:    TestWorkerMachineType,
 					MachineImage: v1alpha1.MachineImage{
-						Name:    TestWorkerMachineImageName,
-						Version: TestWorkerMachineImageVersion,
+						Name:    TestImageName,
+						Version: TestImageVersion,
 					},
 					UserData: []byte(TestWorkerUserData),
 					Zones: []string{
@@ -116,62 +110,4 @@ func ManipulateWorker(worker *v1alpha1.Worker, data map[string]interface{}) *v1a
 	}
 
 	return worker
-}
-
-// SetupImagesEndpointOnMux configures a "/images" endpoint on the mux given.
-//
-// PARAMETERS
-// mux *http.ServeMux Mux to add handler to
-func SetupImagesEndpointOnMux(mux *http.ServeMux) {
-	mux.HandleFunc("/images", func(res http.ResponseWriter, req *http.Request) {
-		res.Header().Add("Content-Type", "application/json; charset=utf-8")
-
-		res.WriteHeader(http.StatusOK)
-
-		res.Write([]byte(fmt.Sprintf(`
-{
-	"id": %q,
-	"type": "collection",
-	"href": "",
-	"items": [
-		{
-			"id": %q,
-			"type": "image",
-			"href": "",
-			"metadata": {
-				"etag": "45480eb3fbfc31f1d916c1eaa4abdcc3",
-				"createdDate": "2015-12-04T14:34:09.809Z",
-				"createdBy": "user@example.com",
-				"createdByUserId": "user@example.com",
-				"lastModifiedDate": "2015-12-04T14:34:09.809Z",
-				"lastModifiedBy": "user@example.com",
-				"lastModifiedByUserId": "63cef532-26fe-4a64-a4e0-de7c8a506c90",
-				"state": "AVAILABLE"
-			},
-			"properties": {
-				"name": "%s-%s",
-				"description": "Proudly copied from the IONOS Cloud API documentation",
-				"location": "us/las",
-				"size": 100,
-				"cpuHotPlug": true,
-				"cpuHotUnplug": true,
-				"ramHotPlug": true,
-				"ramHotUnplug": true,
-				"nicHotPlug": true,
-				"nicHotUnplug": true,
-				"discVirtioHotPlug": true,
-				"discVirtioHotUnplug": true,
-				"discScsiHotPlug": true,
-				"discScsiHotUnplug": true,
-				"licenceType": "LINUX",
-				"imageType": "HDD",
-				"public": true,
-				"imageAliases": [],
-				"cloudInit": "V1"
-			}
-		}
-	]
-}
-		`, uuid.NewString(), TestWorkerMachineImageID, TestWorkerMachineImageName, TestWorkerMachineImageVersion)))
-	})
 }

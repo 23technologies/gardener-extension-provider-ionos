@@ -46,7 +46,11 @@ var _ = Describe("ActuatorReconcile", func() {
 
 		ionosapiwrapper.SetClientForUser("dummy-user", mockTestEnv.IonosClient)
 		mock.SetupDatacentersEndpointOnMux(mockTestEnv.Mux)
+		mock.SetupImagesEndpointOnMux(mockTestEnv.Mux)
+		mock.SetupServersEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupTestDatacenterEndpointOnMux(mockTestEnv.Mux)
+		mock.SetupTestInfrastructureServerEndpointOnMux(mockTestEnv.Mux)
+		mock.SetupTestImageEndpointOnMux(mockTestEnv.Mux)
 
 		newCluster, err := mock.DecodeCluster(mock.NewCluster())
 		Expect(err).NotTo(HaveOccurred())

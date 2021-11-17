@@ -51,6 +51,13 @@ const (
 		"apiVersion": "core.gardener.cloud/v1alpha1",
 		"kind": "Shoot",
 		"spec": {
+			"provider": {
+				"controlPlaneConfig": {
+					"apiVersion": "ionos.provider.extensions.gardener.cloud/v1alpha1",
+					"kind": "ControlPlaneConfig",
+					"zone": "us-las"
+				}
+			},
 			"kubernetes": {"version": "1.13.4"},
 			"cloud": {"ionos": {"test": "foo"}},
 			"region": "hel1",

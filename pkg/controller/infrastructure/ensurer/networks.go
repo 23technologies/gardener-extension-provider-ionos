@@ -115,7 +115,7 @@ func EnsureNetworks(ctx context.Context, client *ionossdk.APIClient, datacenterI
 	}
 
 	if "" == wanID {
-		wanID, err := createLANNetwork(ctx, client, datacenterID, name, true)
+		wanID, err = createLANNetwork(ctx, client, datacenterID, name, true)
 		if nil != err {
 			return wanID, workersID, err
 		}
@@ -131,7 +131,7 @@ func EnsureNetworks(ctx context.Context, client *ionossdk.APIClient, datacenterI
 		}
 
 		if "" == workersID {
-			workersID, err := createLANNetwork(ctx, client, datacenterID, name, false)
+			workersID, err = createLANNetwork(ctx, client, datacenterID, name, false)
 			if nil != err {
 				return wanID, workersID, err
 			}

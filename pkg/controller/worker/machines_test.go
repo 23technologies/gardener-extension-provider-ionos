@@ -185,7 +185,7 @@ var _ = Describe("Machines", func() {
 							"zone":         mock.TestZone,
 							"cores":        mock.TestWorkerMachineCPUs,
 							"memory":       mock.TestWorkerMachineMemoryInMB,
-							"imageID":     	mock.TestWorkerMachineImageID,
+							"imageID":     	mock.TestImageID,
 							"sshKey":       mock.TestSSHPublicKey,
 							"networkIDs":   &apis.NetworkIDs{},
 							"tags": map[string]string{

@@ -31,8 +31,12 @@ import (
 const (
 	TestDatacenterID = "01234567-89ab-4def-0123-c56789abcdef"
 	TestFloatingPoolName = "MY-FLOATING-POOL"
+	TestImageID = "01234567-89ab-4def-0123-c56789abcdef"
+	TestImageName = "test"
+	TestImageVersion = "1.0"
 	TestNamespace = "test-namespace"
 	TestRegion = "us"
+	TestVolumeID = "3456789a-bcde-4012-3f56-789abcdef012"
 	TestSSHPublicKey = "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBJ9S5cCzfygWEEVR+h3yDE83xKiTlc7S3pC3IadoYu/HAmjGPNRQZWLPCfZe5K3PjOGgXghmBY22voYl7bSVjy+8nZRPuVBuFDZJ9xKLPBImQcovQ1bMn8vXno4fvAF4KQ=="
 	TestZone = "us-las"
 )
