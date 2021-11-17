@@ -323,8 +323,8 @@ func autoConvert_v1alpha1_DHCPServerConfiguration_To_apis_DHCPServerConfiguratio
 	out.Image = (*apis.MachineImage)(unsafe.Pointer(in.Image))
 	out.Cores = in.Cores
 	out.Memory = in.Memory
-	out.SSHKey = in.SSHKey
 	out.UserData = in.UserData
+	out.Password = in.Password
 	out.VolumeSize = in.VolumeSize
 	return nil
 }
@@ -338,8 +338,8 @@ func autoConvert_apis_DHCPServerConfiguration_To_v1alpha1_DHCPServerConfiguratio
 	out.Image = (*MachineImage)(unsafe.Pointer(in.Image))
 	out.Cores = in.Cores
 	out.Memory = in.Memory
-	out.SSHKey = in.SSHKey
 	out.UserData = in.UserData
+	out.Password = in.Password
 	out.VolumeSize = in.VolumeSize
 	return nil
 }

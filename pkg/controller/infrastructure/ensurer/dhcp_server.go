@@ -21,14 +21,18 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"math"
+	"math/rand"
+	"strings"
+	"time"
 
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis"
 	ionosapiwrapper "github.com/23technologies/ionos-api-wrapper/pkg"
 	ionossdk "github.com/ionos-cloud/sdk-go/v5"
 )
 
+// Constant ionosPasswordGeneratedLength is the length of the generated random password
+const ionosPasswordGeneratedLength = 32
 // Constant ionosVolumeType is the volume type
 const ionosVolumeType = "SSD"
 
@@ -45,11 +49,22 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 		return "", errors.New("imageID given doesn't belong to a cloud-init enabled image")
 	}
 
+	password := configuration.Password
 	userDataBase64Encoded := base64.StdEncoding.EncodeToString([]byte(configuration.UserData))
-	sshKeys := []string{fmt.Sprintf("%s\n", configuration.SSHKey)}
 	volumeName := "dhcp-server-root-volume"
 	volumeSize := configuration.VolumeSize
 	volumeType := ionosVolumeType
+
+	if "" == password {
+		var passwordBuilder strings.Builder
+		seededRand := rand.New(rand.NewSource(time.Now().Unix()))
+
+		for i := 0; i < ionosPasswordGeneratedLength; i++ {
+			passwordBuilder.WriteString(string(32 + seededRand.Intn(94)))
+		}
+
+		password = passwordBuilder.String()
+	}
 
 	if 0 == volumeSize {
 		volumeSize = *image.Properties.Size
@@ -62,7 +77,7 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 		Name: &volumeName,
 		Size: &volumeSize,
 		Image: &imageID,
-		SshKeys: &sshKeys,
+		ImagePassword: &password,
 		UserData: &userDataBase64Encoded,
 	}
 
