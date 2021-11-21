@@ -1,4 +1,4 @@
-# github.com/23technologies/ionos-api-wrapper v0.1.3
+# github.com/23technologies/ionos-api-wrapper v0.1.4
 ## explicit
 github.com/23technologies/ionos-api-wrapper/pkg
 # github.com/BurntSushi/toml v0.3.1

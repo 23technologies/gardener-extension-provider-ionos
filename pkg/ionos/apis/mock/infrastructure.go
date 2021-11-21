@@ -197,8 +197,8 @@ const (
 				"name": "test",
 				"version": "1.0"
 			},
-			"sshKey": "ssh-rsa invalid",
-			"userData": ""
+			"ip": "10.250.31.254",
+			"userData": "#cloud-config"
 		},
 		"floatingPoolName": "MY-FLOATING-POOL",
 		"networks": {"workers": "10.250.0.0/19"}

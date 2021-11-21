@@ -46,6 +46,8 @@ type DHCPServerConfiguration struct {
 	//
 	Memory   uint          `json:"memory"`
 	//
+	IP       string        `json:"ip"`
+	//
 	UserData string        `json:"userData"`
 
 	//

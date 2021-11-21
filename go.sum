@@ -22,8 +22,8 @@ cloud.google.com/go/storage v1.0.0/go.mod h1:IhtSnM/ZTZV8YYJWCY8RULGVqBDmpoyjwiy
 cloud.google.com/go/storage v1.5.0/go.mod h1:tpKbwo567HUNpVclU5sGELwQWBDZ8gh0ZeosJ0Rtdos=
 cloud.google.com/go/storage v1.6.0/go.mod h1:N7U0C8pVQ/+NIKOBQyamJIeKQKkZ+mxpohlUTyfDhBk=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/23technologies/ionos-api-wrapper v0.1.3 h1:xGsqzWil8LDXgkGN3+Q98/Coq+nhFdlgTb+Uu8XSyF0=
-github.com/23technologies/ionos-api-wrapper v0.1.3/go.mod h1:zJ7H+q07Y72JTvunLRz6oMA7vPvXEojKkAxrxzZ7tvg=
+github.com/23technologies/ionos-api-wrapper v0.1.4 h1:xYqYnQue6Qawxr6yzvCdviqa5nph8n47kFye+zh6FIA=
+github.com/23technologies/ionos-api-wrapper v0.1.4/go.mod h1:zJ7H+q07Y72JTvunLRz6oMA7vPvXEojKkAxrxzZ7tvg=
 github.com/Azure/azure-sdk-for-go v39.0.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/azure-sdk-for-go v42.2.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78/go.mod h1:LmzpDX56iTiv29bbRTIsUNlaFfuhWRQBWjQdVyAevI8=

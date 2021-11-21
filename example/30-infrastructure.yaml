@@ -78,6 +78,7 @@ spec:
         version: "20.04"
       cores: 1
       memory: 1024
+      ip: 10.15.100.254
       userData: |-
         #cloud-config
         package_update: true

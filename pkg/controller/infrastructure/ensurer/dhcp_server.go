@@ -21,8 +21,10 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"math"
 	"math/rand"
+	"net"
 	"strings"
 	"time"
 
@@ -143,7 +145,12 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 		return "", err
 	}
 
-	err = ionosapiwrapper.AttachLANToServerWithoutDHCP(ctx, client, datacenterID, serverID, networkID)
+	dhcpIP := net.ParseIP(configuration.IP)
+	if nil == dhcpIP {
+		return "", fmt.Errorf("IP %q given is invalid", configuration.IP)
+	}
+
+	err = ionosapiwrapper.AttachLANToServerWithIP(ctx, client, datacenterID, serverID, networkID, &dhcpIP)
 	if nil != err {
 		return "", err
 	}
