@@ -3,7 +3,7 @@ module github.com/23technologies/gardener-extension-provider-ionos
 go 1.16
 
 require (
-	github.com/23technologies/ionos-api-wrapper v0.1.4
+	github.com/23technologies/ionos-api-wrapper v0.2.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
 	github.com/coreos/go-systemd/v22 v22.1.0

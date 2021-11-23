@@ -65,7 +65,7 @@ func (a *actuator) reconcile(ctx context.Context, infra *extensionsv1alpha1.Infr
 		return err
 	}
 
-	dhcpServerID, err := ensurer.EnsureDHCPServer(ctx, client, datacenterID, cpConfig.Zone, actuatorConfig.infraConfig, infraStatus, workerNetworkID)
+	dhcpServerID, err := ensurer.EnsureDHCPServer(ctx, client, datacenterID, cpConfig.Zone, actuatorConfig.infraConfig, infraStatus, wanNetworkID, workerNetworkID)
 	if err != nil {
 		return err
 	}

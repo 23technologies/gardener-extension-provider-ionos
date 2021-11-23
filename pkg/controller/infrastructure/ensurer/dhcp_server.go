@@ -34,11 +34,11 @@ import (
 )
 
 // Constant ionosPasswordGeneratedLength is the length of the generated random password
-const ionosPasswordGeneratedLength = 500
+const ionosPasswordGeneratedLength = 32
 // Constant ionosVolumeType is the volume type
 const ionosVolumeType = "SSD"
 
-func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacenterID, zone string, configuration *apis.DHCPServerConfiguration, networkID string) (string, error) {
+func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacenterID, zone string, configuration *apis.DHCPServerConfiguration, wanNetworkID, workerNetworkID string) (string, error) {
 	imageID, err := apis.FindMachineImageName(ctx, client, zone, configuration.Image.Name, configuration.Image.Version, "")
 	if nil != err {
 		return "", err
@@ -150,7 +150,12 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 		return "", fmt.Errorf("IP %q given is invalid", configuration.IP)
 	}
 
-	err = ionosapiwrapper.AttachLANToServerWithIP(ctx, client, datacenterID, serverID, networkID, &dhcpIP)
+	err = ionosapiwrapper.AttachWANToServer(ctx, client, datacenterID, serverID, wanNetworkID)
+	if nil != err {
+		return "", err
+	}
+
+	err = ionosapiwrapper.AttachLANToServerWithIP(ctx, client, datacenterID, serverID, workerNetworkID, &dhcpIP)
 	if nil != err {
 		return "", err
 	}
@@ -210,7 +215,7 @@ func deleteServerID(ctx context.Context, client *ionossdk.APIClient, datacenterI
 	return nil
 }
 
-func EnsureDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacenterID, zone string, infraConfig *apis.InfrastructureConfig, infraStatus *apis.InfrastructureStatus, networkID string) (string, error) {
+func EnsureDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacenterID, zone string, infraConfig *apis.InfrastructureConfig, infraStatus *apis.InfrastructureStatus, wanNetworkID, workerNetworkID string) (string, error) {
 	cidr := infraConfig.Networks.Workers
 	configuration := infraConfig.DHCPServerConfiguration
 	var configurationStatus *apis.DHCPServerConfigurationStatus
@@ -244,8 +249,8 @@ func EnsureDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 			}
 		}
 
-		if "" != networkID {
-			newServerID, err := createDHCPServer(ctx, client, datacenterID, zone, configuration, networkID)
+		if "" != workerNetworkID {
+			newServerID, err := createDHCPServer(ctx, client, datacenterID, zone, configuration, wanNetworkID, workerNetworkID)
 			if nil != err {
 				return "", err
 			}
