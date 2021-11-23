@@ -450,6 +450,38 @@ func SetupTestDatacenterEndpointOnMux(mux *http.ServeMux) {
 		}
 	})
 
+	mux.HandleFunc(fmt.Sprintf("%s/labels", baseURL), func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		if (strings.ToLower(req.Method) == "get") {
+			res.WriteHeader(http.StatusOK)
+			res.Write([]byte(fmt.Sprintf(`
+{
+"id": %q,
+"type": "collection",
+"href": "",
+"items": [ ]
+}
+			`, uuid.NewString())))
+		} else if (strings.ToLower(req.Method) == "post") {
+			res.WriteHeader(http.StatusCreated)
+
+			jsonData := make([]byte, req.ContentLength)
+			req.Body.Read(jsonData)
+
+			var data map[string]interface{}
+
+			jsonErr := json.Unmarshal(jsonData, &data)
+			if jsonErr != nil {
+				panic(jsonErr)
+			}
+
+			res.Write([]byte(jsonData))
+		} else {
+			panic("Unsupported HTTP method call")
+		}
+	})
+
 	mux.HandleFunc(fmt.Sprintf("%s/lans", baseURL), func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 

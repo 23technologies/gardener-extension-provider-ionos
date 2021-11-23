@@ -19,6 +19,7 @@ package ensurer
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -56,6 +57,11 @@ func EnsureDatacenter(ctx context.Context, client *ionossdk.APIClient, zone, nam
 	datacenterID := *datacenter.Id
 
 	err = ionosapiwrapper.WaitForDatacenterModifications(ctx, client, datacenterID)
+	if nil != err {
+		return "", err
+	}
+
+	err = ionosapiwrapper.AddLabelToDatacenter(ctx, client, datacenterID, "cluster", hex.EncodeToString([]byte(namespace)))
 	if nil != err {
 		return "", err
 	}
