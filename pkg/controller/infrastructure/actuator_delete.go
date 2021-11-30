@@ -50,6 +50,11 @@ func (a *actuator) delete(ctx context.Context, infra *extensionsv1alpha1.Infrast
 	infraStatus, _ := transcoder.DecodeInfrastructureStatusFromInfrastructure(infra)
 
 	if nil != infraStatus {
+		err = ensurer.EnsureDHCPServerDeleted(ctx, client, infraStatus.DatacenterID, infraStatus.DHCPServerConfiguration.ServerID)
+		if err != nil {
+			return err
+		}
+
 		err = ensurer.EnsureNetworksDeleted(ctx, client, infraStatus.DatacenterID, infraStatus.NetworkIDs)
 		if err != nil {
 			return err
