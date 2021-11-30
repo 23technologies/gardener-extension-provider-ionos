@@ -50,20 +50,7 @@ func (a *actuator) delete(ctx context.Context, infra *extensionsv1alpha1.Infrast
 	infraStatus, _ := transcoder.DecodeInfrastructureStatusFromInfrastructure(infra)
 
 	if nil != infraStatus {
-		err = ensurer.EnsureDHCPServerDeleted(ctx, client, infraStatus.DatacenterID, infraStatus.DHCPServerConfiguration.ServerID)
-		if err != nil {
-			return err
-		}
-
-		err = ensurer.EnsureNetworksDeleted(ctx, client, infraStatus.DatacenterID, infraStatus.NetworkIDs)
-		if err != nil {
-			return err
-		}
-
-		err = ensurer.EnsureFloatingPoolDeleted(ctx, client, infraStatus.FloatingPoolID)
-		if err != nil {
-			return err
-		}
+		isDeleted := false
 
 		labels, _, err := client.LabelApi.DatacentersLabelsGet(ctx, infraStatus.DatacenterID).Depth(1).Execute()
 		if nil != err {
@@ -83,8 +70,26 @@ func (a *actuator) delete(ctx context.Context, infra *extensionsv1alpha1.Infrast
 						return err
 					}
 
+					isDeleted = true
 					break
 				}
+			}
+		}
+
+		if !isDeleted {
+			err = ensurer.EnsureDHCPServerDeleted(ctx, client, infraStatus.DatacenterID, infraStatus.DHCPServerConfiguration.ServerID)
+			if err != nil {
+				return err
+			}
+
+			err = ensurer.EnsureNetworksDeleted(ctx, client, infraStatus.DatacenterID, infraStatus.NetworkIDs)
+			if err != nil {
+				return err
+			}
+
+			err = ensurer.EnsureFloatingPoolDeleted(ctx, client, infraStatus.FloatingPoolID)
+			if err != nil {
+				return err
 			}
 		}
 	}
