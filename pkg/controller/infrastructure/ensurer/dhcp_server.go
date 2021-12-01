@@ -81,7 +81,7 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 	if 0 == volumeSize {
 		volumeSize = *image.Properties.Size
 	} else {
-		volumeSize = float32(math.Max(math.Ceil(float64(volumeSize) / 1048576), float64(*image.Properties.Size)))
+		volumeSize = float32(math.Max(math.Ceil(float64(volumeSize) / 1073741824), float64(*image.Properties.Size)))
 	}
 
 	volumeProperties := ionossdk.VolumeProperties{
