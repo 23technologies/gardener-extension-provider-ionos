@@ -34,8 +34,8 @@ providerSpec:
 {{- if $machineClass.floatingPoolID }}
   floatingPoolID: {{ $machineClass.floatingPoolID }}
 {{- end }}
-{{- if $machineClass.extraConfig }}
   volumeSize: {{ $machineClass.volumeSize }}
+{{- if $machineClass.extraConfig }}
   extraConfig:
 {{ toYaml $machineClass.extraConfig | indent 4 }}
 {{- end }}
