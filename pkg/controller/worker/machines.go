@@ -35,6 +35,7 @@ import (
 	mcmv1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -188,12 +189,14 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			}
 
 			if nil != pool.Volume && "" != pool.Volume.Size {
-				volumeSize, err := worker.DiskSize(pool.Volume.Size)
+				volumeSizeQuantity, err := resource.ParseQuantity(pool.Volume.Size)
 				if err != nil {
 					return err
 				}
 
-				if volumeSize > 0 {
+				volumeSize, ok := volumeSizeQuantity.AsInt64()
+
+				if ok && volumeSize > 0 {
 					machineClassSpec["volumeSize"] = volumeSize
 				}
 			}
