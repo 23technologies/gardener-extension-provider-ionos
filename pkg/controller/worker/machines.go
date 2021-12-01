@@ -165,8 +165,8 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 				"datacenterID": infraStatus.DatacenterID,
 				"cluster":      w.worker.Namespace,
 				"zone":         zone,
-				"cores":        values.cores,
-				"memory":       values.memoryInMB,
+				"cores":        values.Cores,
+				"memory":       values.MemoryInMB,
 				"imageID":      imageID,
 				"sshKey":       string(w.worker.Spec.SSHPublicKey),
 				"networkIDs":   infraStatus.NetworkIDs,
@@ -184,6 +184,17 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			if values.MachineTypeOptions != nil {
 				if len(values.MachineTypeOptions.ExtraConfig) > 0 {
 					machineClassSpec["extraConfig"] = values.MachineTypeOptions.ExtraConfig
+				}
+			}
+
+			if nil != pool.Volume && "" != pool.Volume.Size {
+				volumeSize, err := worker.DiskSize(pool.Volume.Size)
+				if err != nil {
+					return err
+				}
+
+				if volumeSize > 0 {
+					machineClassSpec["volumeSize"] = volumeSize
 				}
 			}
 
@@ -217,8 +228,8 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 }
 
 type machineValues struct {
-	cores              int
-	memoryInMB         int
+	Cores              int
+	MemoryInMB         int
 	MachineTypeOptions *apis.MachineTypeOptions
 }
 
@@ -241,17 +252,17 @@ func (w *workerDelegate) extractMachineValues(machineTypeName string) (*machineV
 
 	values := &machineValues{}
 	if n, ok := machineType.CPU.AsInt64(); ok {
-		values.cores = int(n)
+		values.Cores = int(n)
 	}
-	if values.cores <= 0 {
+	if values.Cores <= 0 {
 		err := fmt.Errorf("machine type %s has invalid CPU value %s", machineTypeName, machineType.CPU.String())
 		return nil, err
 	}
 
 	if n, ok := machineType.Memory.AsInt64(); ok {
-		values.memoryInMB = int(n) / (1024 * 1024)
+		values.MemoryInMB = int(n) / (1024 * 1024)
 	}
-	if values.memoryInMB <= 0 {
+	if values.MemoryInMB <= 0 {
 		err := fmt.Errorf("machine type %s has invalid Memory value %s", machineTypeName, machineType.Memory.String())
 		return nil, err
 	}
