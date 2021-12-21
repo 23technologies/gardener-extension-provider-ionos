@@ -155,7 +155,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			}
 
 			secretMap := map[string]interface{}{
-				"userData": pool.UserData,
+				"userData": string(pool.UserData),
 			}
 
 			for key, value := range machineClassSecretData {

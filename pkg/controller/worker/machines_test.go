@@ -195,7 +195,7 @@ var _ = Describe("Machines", func() {
 							"secret": map[string]interface{}{
 								"ionosUser":     []byte("dummy-user"),
 								"ionosPassword": []byte("dummy-password"),
-								"userData":      []byte(mock.TestWorkerUserData),
+								"userData":      mock.TestWorkerUserData,
 							},
 						},
 					},
