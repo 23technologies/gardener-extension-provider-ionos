@@ -130,7 +130,7 @@ var _ = Describe("Machines", func() {
 			expect expect
 		}
 
-		machineClassName := fmt.Sprintf("%s-%s-%s-%s", mock.TestNamespace, mock.TestWorkerPoolName, mock.TestZone, "94a23")
+		machineClassName := fmt.Sprintf("%s-%s-%s-%s", mock.TestNamespace, mock.TestWorkerPoolName, mock.TestZone, "bb7d6")
 
 		DescribeTable("##table",
 			func(data *data) {
@@ -221,14 +221,14 @@ var _ = Describe("Machines", func() {
 						mock.NewWorker(),
 						map[string]interface{}{
 							"Spec.Pools.0.MachineImage": v1alpha1.MachineImage{
-								Name:    "invalid",
+								Name:    "test",
 								Version: "1.0",
 							},
 						},
 					),
 				},
 				expect: expect{
-					err: errors.New("could not find machine image for invalid/1.0 neither in cloud profile nor in worker status"),
+					err: errors.New("could not find machine image for test/1.0 neither in cloud profile nor in worker status"),
 					errToHaveOccurred: true,
 				},
 			}),
@@ -314,14 +314,14 @@ var _ = Describe("Machines", func() {
 						mock.NewWorker(),
 						map[string]interface{}{
 							"Spec.Pools.0.MachineImage": v1alpha1.MachineImage{
-								Name:    "invalid",
+								Name:    "test",
 								Version: "1.0",
 							},
 						},
 					),
 				},
 				expect: expect{
-					err: errors.New("could not find machine image for invalid/1.0 neither in cloud profile nor in worker status"),
+					err: errors.New("could not find machine image for test/1.0 neither in cloud profile nor in worker status"),
 					errToHaveOccurred: true,
 				},
 			}),

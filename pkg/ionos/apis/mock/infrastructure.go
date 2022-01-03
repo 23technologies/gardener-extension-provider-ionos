@@ -194,7 +194,7 @@ const (
 		"kind": "InfrastructureConfig",
 		"dhcpServerConfiguration": {
 			"image": {
-				"name": "test",
+				"name": "ubuntu",
 				"version": "1.0"
 			},
 			"ip": "10.250.31.254",

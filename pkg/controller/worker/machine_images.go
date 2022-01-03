@@ -26,8 +26,8 @@ import (
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/transcoder"
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/v1alpha1"
 	ionosapiwrapper "github.com/23technologies/ionos-api-wrapper/pkg"
-	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
+	"github.com/gardener/gardener/pkg/controllerutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/util/retry"
@@ -112,7 +112,7 @@ func (w *workerDelegate) UpdateMachineImagesStatus(ctx context.Context) error {
 		return err
 	}
 
-	return controller.TryUpdateStatus(ctx, retry.DefaultBackoff, w.Client(), w.worker, func() error {
+	return controllerutils.TryUpdateStatus(ctx, retry.DefaultBackoff, w.Client(), w.worker, func() error {
 		w.worker.Status.ProviderStatus = &runtime.RawExtension{Object: workerStatusV1alpha1}
 		return nil
 	})

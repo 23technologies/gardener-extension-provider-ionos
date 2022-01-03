@@ -28,7 +28,7 @@ import (
 
 const (
 	TestClusterCloudProfile = `{
-		"apiVersion": "core.gardener.cloud/v1alpha1",
+		"apiVersion": "core.gardener.cloud/v1beta1",
 		"kind": "CloudProfile",
 		"spec": {
 			"regions": [{"name": "hel1", "zones": [{"name": "hel1-dc2"}]}],
@@ -44,13 +44,16 @@ const (
 	}`
 	TestClusterName = "xyz"
 	TestClusterSeed = `{
-		"apiVersion": "core.gardener.cloud/v1alpha1",
+		"apiVersion": "core.gardener.cloud/v1beta1",
 		"kind": "Seed"
 	}`
 	TestClusterShoot = `{
-		"apiVersion": "core.gardener.cloud/v1alpha1",
+		"apiVersion": "core.gardener.cloud/v1beta1",
 		"kind": "Shoot",
 		"spec": {
+			"kubernetes": {"version": "1.13.4"},
+			"cloud": {"ionos": {"test": "foo"}},
+			"region": "hel1",
 			"provider": {
 				"controlPlaneConfig": {
 					"apiVersion": "ionos.provider.extensions.gardener.cloud/v1alpha1",
@@ -58,9 +61,6 @@ const (
 					"zone": "us-las"
 				}
 			},
-			"kubernetes": {"version": "1.13.4"},
-			"cloud": {"ionos": {"test": "foo"}},
-			"region": "hel1",
 			"status": {
 				"lastOperation": {"state": "Succeeded"}
 			}
@@ -73,19 +73,17 @@ const (
 // PARAMETERS
 // cluster *v1alpha1.Cluster Cluster specification
 func DecodeCluster(cluster *v1alpha1.Cluster) (*extensions.Cluster, error) {
-	decoder := extensions.NewGardenDecoder()
-
-	cloudProfile, err := extensions.CloudProfileFromCluster(decoder, cluster)
+	cloudProfile, err := extensions.CloudProfileFromCluster(cluster)
 	if err != nil {
 		return nil, err
 	}
 
-	seed, err := extensions.SeedFromCluster(decoder, cluster)
+	seed, err := extensions.SeedFromCluster(cluster)
 	if err != nil {
 		return nil, err
 	}
 
-	shoot, err := extensions.ShootFromCluster(decoder, cluster)
+	shoot, err := extensions.ShootFromCluster(cluster)
 	if err != nil {
 		return nil, err
 	}

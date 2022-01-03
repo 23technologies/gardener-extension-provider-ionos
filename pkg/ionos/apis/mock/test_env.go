@@ -32,7 +32,7 @@ const (
 	TestDatacenterID = "01234567-89ab-4def-0123-c56789abcdef"
 	TestFloatingPoolName = "MY-FLOATING-POOL"
 	TestImageID = "01234567-89ab-4def-0123-c56789abcdef"
-	TestImageName = "test"
+	TestImageName = "ubuntu"
 	TestImageVersion = "1.0"
 	TestNamespace = "test-namespace"
 	TestRegion = "us"
