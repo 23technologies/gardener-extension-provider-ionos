@@ -43,7 +43,7 @@ spec:
     kind: Shoot
     spec:
       kubernetes:
-        version: 1.13.4
+        version: 1.15.4
       region: hel1
       cloud:
         ionos:
@@ -72,6 +72,9 @@ spec:
       machineImage:
         name: ubuntu
         version: "20.04"
+      kubernetes:
+        kubelet:
+          failSwapOn: false
       minimum: 1
       maximum: 1
       maxSurge: 1
@@ -79,6 +82,8 @@ spec:
       zones:
       - hel1-dc2
       userData: IyEvYmluL2Jhc2gKCmVjaG8gImhlbGxvIHdvcmxkIgo=
+      volume:
+        size: 10Gi
   sshPublicKey: ZGF0YQo=
   secretRef:
     name: cloudprovider

@@ -1,10 +1,11 @@
+---
 apiVersion: v1
 kind: Namespace
 metadata:
   name: shoot--foobar--ionos
   labels:
-    backup.gardener.cloud/provider: ionos
-    seed.gardener.cloud/provider: ionos
+#    backup.gardener.cloud/provider: ionos
+#    seed.gardener.cloud/provider: ionos
     shoot.gardener.cloud/provider: ionos
 ---
 apiVersion: v1
@@ -14,9 +15,9 @@ metadata:
   namespace: shoot--foobar--ionos
 type: Opaque
 data:
+  ionosCloudConf: eyJ1c2VybmFtZSI6IiIsInBhc3N3b3JkIjoiIn0K
   ionosUser: ==
   ionosPassword: ==
-  ionosCloudConf: eyJ1c2VybmFtZSI6IiIsInBhc3N3b3JkIjoiIn0K
 ---
 apiVersion: extensions.gardener.cloud/v1alpha1
 kind: Cluster
@@ -52,7 +53,7 @@ spec:
           networks:
             pods: 10.250.0.0/19
       kubernetes:
-        version: 1.13.4
+        version: 1.15.4
       hibernation:
         enabled: false
     status:

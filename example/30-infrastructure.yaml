@@ -13,8 +13,8 @@ metadata:
 type: Opaque
 data:
   ionosCloudConf: eyJ1c2VybmFtZSI6IiIsInBhc3N3b3JkIjoiIn0K
-  ionosPassword: ==
   ionosUser: ==
+  ionosPassword: ==
 ---
 apiVersion: extensions.gardener.cloud/v1alpha1
 kind: Cluster
@@ -29,6 +29,10 @@ spec:
       - name: hel1
       machineTypes:
         - name: small
+          cpu: "1"
+          gpu: "0"
+          memory: 2Gi
+          storageSize: 10Gi
       providerConfig:
         apiVersion: ionos.provider.extensions.gardener.cloud/v1alpha1
         kind: CloudProfileConfig
@@ -48,7 +52,7 @@ spec:
     kind: Shoot
     spec:
       kubernetes:
-        version: 1.13.4
+        version: 1.15.4
       region: hel1
       cloud:
         ionos:
@@ -81,10 +85,11 @@ spec:
       ip: 10.15.100.254
       userData: |-
         #cloud-config
-        package_update: true
-        packages:
-        - dnsmasq
         runcmd:
+        - [ ln, -sf, /run/systemd/resolve/resolv.conf, /etc/resolv.conf ]
+        - [ systemctl, restart, systemd-resolved ]
+        - [ apt-get, update ]
+        - [ apt-get, install, -y, dnsmasq ]
         - [ systemctl, restart, systemd-resolved ]
         - [ systemctl, enable, dnsmasq ]
         - [ systemctl, start, dnsmasq ]
@@ -109,8 +114,9 @@ spec:
             listen-address=127.0.0.1
             listen-address=::1
             listen-address=10.15.100.254
-            dhcp-range=10.15.100.0,10.15.100.253,12h
-      volumeSize: 10485760
+            dhcp-range=set:workers,10.15.100.0,10.15.100.253,24h
+            dhcp-option=tag:workers,option:router
+      volumeSize: 10737418240
     floatingPool:
       name: MY-FLOATING-POOL
       size: 256
