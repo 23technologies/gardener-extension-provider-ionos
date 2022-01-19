@@ -71,12 +71,12 @@ if [[ -z "$LOCAL_BUILD" ]]; then
     -o ${BINARY_PATH}/gardener-extension-provider-ionos \
     cmd/gardener-extension-provider-ionos/main.go
 
-  #CGO_ENABLED=0 GOOS=$(go env GOOS) GOARCH=$(go env GOARCH) go build \
-  #  -a \
-  #  -v \
-  #  -ldflags "$LD_FLAGS" \
-  #  -o ${BINARY_PATH}/gardener-extension-validator-ionos \
-  #  cmd/gardener-extension-validator-ionos/main.go
+  CGO_ENABLED=0 GOOS=$(go env GOOS) GOARCH=$(go env GOARCH) go build \
+   -a \
+   -v \
+   -ldflags "$LD_FLAGS" \
+   -o ${BINARY_PATH}/gardener-extension-admission-ionos \
+   cmd/gardener-extension-admission-ionos/main.go
 # If the LOCAL_BUILD environment variable is set, we simply run `go build`.
 else
   GOOS=$(go env GOOS) GOARCH=$(go env GOARCH) go build \
@@ -85,11 +85,11 @@ else
     -o ${BINARY_PATH}/gardener-extension-provider-ionos \
     cmd/gardener-extension-provider-ionos/main.go
 
-  #GOOS=$(go env GOOS) GOARCH=$(go env GOARCH) go build \
-  #  -v \
-  #  -ldflags "$LD_FLAGS" \
-  #  -o ${BINARY_PATH}/gardener-extension-validator-ionos \
-  #  cmd/gardener-extension-validator-ionos/main.go
+  GOOS=$(go env GOOS) GOARCH=$(go env GOARCH) go build \
+   -v \
+   -ldflags "$LD_FLAGS" \
+   -o ${BINARY_PATH}/gardener-extension-admission-ionos \
+   cmd/gardener-extension-admission-ionos/main.go
 fi
 
 echo "Build script finished"
