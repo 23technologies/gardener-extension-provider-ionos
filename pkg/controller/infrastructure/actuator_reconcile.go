@@ -21,6 +21,8 @@ import (
 	"context"
 
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/controller/infrastructure/ensurer"
+	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis"
+	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/controller"
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/transcoder"
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/v1alpha1"
 	ionosapiwrapper "github.com/23technologies/ionos-api-wrapper/pkg"
@@ -99,4 +101,45 @@ func (a *actuator) reconcile(ctx context.Context, infra *extensionsv1alpha1.Infr
 	}
 
 	return a.updateProviderStatus(ctx, infra, newInfraStatus)
+}
+
+// reconcileOnErrorCleanup cleans up a failed reconcile request
+//
+// PARAMETERS
+// ctx     context.Context                    Execution context
+// infra   *extensionsv1alpha1.Infrastructure Infrastructure struct
+// cluster *extensionscontroller.Cluster      Cluster struct
+// err     error                              Error encountered
+func (a *actuator) reconcileOnErrorCleanup(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster, err error) {
+	actuatorConfig, _ := a.getActuatorConfig(ctx, infra, cluster)
+	infraStatus, _ := transcoder.DecodeInfrastructureStatusFromInfrastructure(infra)
+	resultData := ctx.Value(controller.CtxWrapDataKey("MethodData")).(*controller.InfrastructureReconcileMethodData)
+
+	client := ionosapiwrapper.GetClientForUser(actuatorConfig.user, actuatorConfig.password)
+
+	isDeleted := false
+
+	if resultData.DatacenterID != "" {
+		ensurer.EnsureDatacenterDeleted(ctx, client, resultData.DatacenterID)
+		isDeleted = true
+	}
+
+	if !isDeleted {
+		if resultData.DHCPServerID != "" {
+			ensurer.EnsureDHCPServerDeleted(ctx, client, infraStatus.DatacenterID, resultData.DHCPServerID)
+		}
+
+		if resultData.NetworkID != "" || resultData.WANID != "" {
+			networkIDs := &apis.NetworkIDs{
+				Workers: resultData.NetworkID,
+				WAN: resultData.WANID,
+			}
+
+			ensurer.EnsureNetworksDeleted(ctx, client, infraStatus.DatacenterID, networkIDs)
+		}
+
+		if resultData.FloatingPoolID != "" {
+			ensurer.EnsureFloatingPoolDeleted(ctx, client, resultData.FloatingPoolID)
+		}
+	}
 }

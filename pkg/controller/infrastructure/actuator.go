@@ -22,9 +22,10 @@ import (
 
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos"
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis"
+	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/controller"
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/transcoder"
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/v1alpha1"
-	"github.com/gardener/gardener/extensions/pkg/controller"
+	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -57,7 +58,7 @@ func NewActuator(gardenID string) infrastructure.Actuator {
 	}
 }
 
-func (a *actuator) getActuatorConfig(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *controller.Cluster) (*actuatorConfig, error) {
+func (a *actuator) getActuatorConfig(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) (*actuatorConfig, error) {
 	cloudProfileConfig, err := transcoder.DecodeCloudProfileConfigFromControllerCluster(cluster)
 	if err != nil {
 		return nil, err
@@ -68,7 +69,7 @@ func (a *actuator) getActuatorConfig(ctx context.Context, infra *extensionsv1alp
 		return nil, err
 	}
 
-	secret, err := controller.GetSecretByReference(ctx, a.Client(), &infra.Spec.SecretRef)
+	secret, err := extensionscontroller.GetSecretByReference(ctx, a.Client(), &infra.Spec.SecretRef)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +97,7 @@ func (a *actuator) getActuatorConfig(ctx context.Context, infra *extensionsv1alp
 // ctx     context.Context                    Execution context
 // infra   *extensionsv1alpha1.Infrastructure Infrastructure struct
 // cluster *extensionscontroller.Cluster      Cluster struct
-func (a *actuator) Delete(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *controller.Cluster) error {
+func (a *actuator) Delete(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
 	return a.delete(ctx, infra, cluster)
 }
 
@@ -106,7 +107,7 @@ func (a *actuator) Delete(ctx context.Context, infra *extensionsv1alpha1.Infrast
 // ctx     context.Context                    Execution context
 // infra   *extensionsv1alpha1.Infrastructure Infrastructure struct
 // cluster *extensionscontroller.Cluster      Cluster struct
-func (a *actuator) Migrate(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *controller.Cluster) error {
+func (a *actuator) Migrate(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
 	return nil
 }
 
@@ -116,8 +117,16 @@ func (a *actuator) Migrate(ctx context.Context, infra *extensionsv1alpha1.Infras
 // ctx     context.Context                    Execution context
 // infra   *extensionsv1alpha1.Infrastructure Infrastructure struct
 // cluster *extensionscontroller.Cluster      Cluster struct
-func (a *actuator) Reconcile(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *controller.Cluster) error {
-	return a.reconcile(ctx, infra, cluster)
+func (a *actuator) Reconcile(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
+	extendedCtx := context.WithValue(ctx, controller.CtxWrapDataKey("MethodData"), &controller.InfrastructureReconcileMethodData{})
+
+	err := a.reconcile(extendedCtx, infra, cluster)
+
+	if nil != err {
+		a.reconcileOnErrorCleanup(extendedCtx, infra, cluster, err)
+	}
+
+	return err
 }
 
 // Restore implements infrastructure.Actuator.Restore
@@ -126,7 +135,7 @@ func (a *actuator) Reconcile(ctx context.Context, infra *extensionsv1alpha1.Infr
 // ctx     context.Context                    Execution context
 // infra   *extensionsv1alpha1.Infrastructure Infrastructure struct
 // cluster *extensionscontroller.Cluster      Cluster struct
-func (a *actuator) Restore(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *controller.Cluster) error {
+func (a *actuator) Restore(ctx context.Context, infra *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
 	return nil
 }
 

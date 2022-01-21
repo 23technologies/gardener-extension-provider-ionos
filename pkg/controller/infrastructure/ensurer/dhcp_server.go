@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis"
+	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/controller"
 	ionosapiwrapper "github.com/23technologies/ionos-api-wrapper/pkg"
 	ionossdk "github.com/ionos-cloud/sdk-go/v5"
 )
@@ -39,6 +40,8 @@ const ionosPasswordGeneratedLength = 32
 const ionosVolumeType = "SSD"
 
 func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacenterID, zone string, configuration *apis.DHCPServerConfiguration, wanNetworkID, workerNetworkID string) (string, error) {
+	resultData := ctx.Value(controller.CtxWrapDataKey("MethodData")).(*controller.InfrastructureReconcileMethodData)
+
 	imageID, err := apis.FindMachineImageName(ctx, client, zone, configuration.Image.Name, configuration.Image.Version, "")
 	if nil != err {
 		return "", err
@@ -100,6 +103,7 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 	}
 
 	volumeID := *volume.Id
+	resultData.DHCPVolumeID = volumeID
 
 	volume, err = ionosapiwrapper.WaitForVolumeModificationsAndGetResult(ctx, client, datacenterID, volumeID)
 	if nil != err {
@@ -129,6 +133,7 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 	}
 
 	serverID := *server.Id
+	resultData.DHCPServerID = serverID
 
 	err = ionosapiwrapper.WaitForServerModifications(ctx, client, datacenterID, serverID)
 	if nil != err {

@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis"
+	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/controller"
 	ionossdk "github.com/ionos-cloud/sdk-go/v5"
 )
 
@@ -70,6 +71,9 @@ func EnsureFloatingPool(ctx context.Context, client *ionossdk.APIClient, zone, n
 		if nil != err {
 			return "", err
 		}
+
+		resultData := ctx.Value(controller.CtxWrapDataKey("MethodData")).(*controller.InfrastructureReconcileMethodData)
+		resultData.FloatingPoolID = *ipBlock.Id
 
 		return *ipBlock.Id, nil
 	}
@@ -119,6 +123,9 @@ func EnsureNetworks(ctx context.Context, client *ionossdk.APIClient, datacenterI
 		if nil != err {
 			return wanID, workersID, err
 		}
+
+		resultData := ctx.Value(controller.CtxWrapDataKey("MethodData")).(*controller.InfrastructureReconcileMethodData)
+		resultData.WANID = wanID
 	}
 
 	if "" != networks.Workers {
@@ -135,6 +142,9 @@ func EnsureNetworks(ctx context.Context, client *ionossdk.APIClient, datacenterI
 			if nil != err {
 				return wanID, workersID, err
 			}
+
+			resultData := ctx.Value(controller.CtxWrapDataKey("MethodData")).(*controller.InfrastructureReconcileMethodData)
+			resultData.NetworkID = workersID
 		}
 	}
 

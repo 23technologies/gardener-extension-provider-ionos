@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/controller"
 	ionosapiwrapper "github.com/23technologies/ionos-api-wrapper/pkg"
 	ionossdk "github.com/ionos-cloud/sdk-go/v5"
 )
@@ -55,6 +56,9 @@ func EnsureDatacenter(ctx context.Context, client *ionossdk.APIClient, zone, nam
 	}
 
 	datacenterID := *datacenter.Id
+
+	resultData := ctx.Value(controller.CtxWrapDataKey("MethodData")).(*controller.InfrastructureReconcileMethodData)
+	resultData.DatacenterID = datacenterID
 
 	err = ionosapiwrapper.WaitForDatacenterModifications(ctx, client, datacenterID)
 	if nil != err {
