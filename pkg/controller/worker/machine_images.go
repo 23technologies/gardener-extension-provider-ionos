@@ -27,10 +27,9 @@ import (
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/v1alpha1"
 	ionosapiwrapper "github.com/23technologies/ionos-api-wrapper/pkg"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
-	"github.com/gardener/gardener/pkg/controllerutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // findMachineImageName returns the image name for the given name and version values.
@@ -112,8 +111,11 @@ func (w *workerDelegate) UpdateMachineImagesStatus(ctx context.Context) error {
 		return err
 	}
 
-	return controllerutils.TryUpdateStatus(ctx, retry.DefaultBackoff, w.Client(), w.worker, func() error {
-		w.worker.Status.ProviderStatus = &runtime.RawExtension{Object: workerStatusV1alpha1}
-		return nil
-	})
+	patch := client.MergeFrom(w.worker.DeepCopy())
+
+	w.worker.Status.ProviderStatus = &runtime.RawExtension{
+		Object: workerStatusV1alpha1,
+	}
+
+	return w.Client().Status().Patch(ctx, w.worker, patch)
 }
