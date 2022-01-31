@@ -1,5 +1,5 @@
 {{- define "name" -}}
-gardener-extension-validator-ionos
+gardener-extension-admission-ionos
 {{- end -}}
 
 {{- define "labels.app.key" -}}
