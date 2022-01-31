@@ -1,5 +1,5 @@
 ############# builder
-FROM eu.gcr.io/gardener-project/3rd/golang:1.17.2 AS builder
+FROM eu.gcr.io/gardener-project/3rd/golang:1.17.5 AS builder
 
 ENV BINARY_PATH=/go/bin
 WORKDIR /go/src/github.com/23technologies/gardener-extension-provider-ionos
@@ -16,10 +16,5 @@ LABEL org.opencontainers.image.source="https://github.com/23technologies/gardene
 
 COPY charts /charts
 COPY --from=builder /go/bin/gardener-extension-provider-ionos /gardener-extension-provider-ionos
+COPY --from=builder /go/bin/gardener-extension-admission-ionos /gardener-extension-admission-ionos
 ENTRYPOINT ["/gardener-extension-provider-ionos"]
-
-############# gardener-extension-validator-ionos
-#FROM base AS gardener-extension-validator-ionos
-#
-#COPY --from=builder /go/bin/gardener-extension-validator-ionos /gardener-extension-validator-ionos
-#ENTRYPOINT ["/gardener-extension-validator-ionos"]
