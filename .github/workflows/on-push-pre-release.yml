@@ -19,7 +19,7 @@ jobs:
           echo "v${{ steps.get-tag-name.outputs.tag-name }}" > VERSION
     - name: Create controller-registration.yaml
       run: |-
-          vendor/github.com/gardener/gardener/hack/generate-controller-registration.sh provider-ionos charts/gardener-extension-provider-ionos VERSION controller-registration.yaml \
+          vendor/github.com/gardener/gardener/hack/generate-controller-registration.sh provider-ionos charts/gardener-extension-provider-ionos "v${{ steps.get-tag-name.outputs.tag-name }}" controller-registration.yaml \
           ControlPlane:ionos Infrastructure:ionos Worker:ionos
     - name: Create Release
       uses: softprops/action-gh-release@v1
