@@ -128,7 +128,7 @@ func EnsureNetworks(ctx context.Context, client *ionossdk.APIClient, datacenterI
 		resultData.WANID = wanID
 	}
 
-	if "" != networks.Workers {
+	if nil != networks && "" != networks.Workers {
 		name = fmt.Sprintf("%s-workers", namespace)
 
 		for _, lan := range *lans.Items {
