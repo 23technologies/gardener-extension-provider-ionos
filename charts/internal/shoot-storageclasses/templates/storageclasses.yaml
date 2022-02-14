@@ -11,7 +11,7 @@ volumeBindingMode: {{ .Values.volumeBindingMode }}
 reclaimPolicy: Delete
 allowVolumeExpansion: {{ .Values.allowVolumeExpansion }}
 parameters:
-  fsType: {{ .Values.fsType }}
+  csi.storage.k8s.io/fstype: {{ .Values.fsType }}
   type: SSD
 ---
 apiVersion: {{ include "storageclassversion" . }}
@@ -26,5 +26,5 @@ volumeBindingMode: {{ .Values.volumeBindingMode }}
 reclaimPolicy: Delete
 allowVolumeExpansion: {{ .Values.allowVolumeExpansion }}
 parameters:
-  fsType: {{ .Values.fsType }}
+  csi.storage.k8s.io/fstype: {{ .Values.fsType }}
   type: HDD

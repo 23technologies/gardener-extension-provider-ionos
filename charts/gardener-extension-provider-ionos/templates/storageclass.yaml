@@ -11,7 +11,7 @@ provisioner: csi.ionos.com
 allowVolumeExpansion: true
 parameters:
 {{- if .Values.gardener.seed.spec.provider.providerConfig.fsType }}
-  fsType: {{ .Values.gardener.seed.spec.provider.providerConfig.fsType }}
+  csi.storage.k8s.io/fstype: {{ .Values.gardener.seed.spec.provider.providerConfig.fsType }}
 {{- end }}
   type: SSD
 {{- end }}
