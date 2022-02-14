@@ -36,7 +36,16 @@ rules:
   - services/status
   verbs:
   - list
+  - patch
+  - update
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - create
+  - get
 # Service statuses need be updated when a load balancer IP changed.
 - apiGroups:
   - ""
@@ -69,8 +78,7 @@ rules:
   resources:
   - persistentvolumes
   verbs:
-  - list
-  - watch
+  - '*'
 - apiGroups:
   - coordination.k8s.io
   resources:

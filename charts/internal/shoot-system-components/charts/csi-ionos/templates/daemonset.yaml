@@ -27,12 +27,8 @@ spec:
         - effect: NoExecute
           operator: Exists
       containers:
-      - name: node-driver-registrar
+      - name: csi-node-driver-registrar
         image: {{ index .Values.images "csi-node-driver-registrar" }}
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/bin/sh", "-c", "rm -rf /registration/csi.hetzner.cloud-reg.sock /csi/csi.sock /var/lib/kubelet/plugins_registry/csi.hetzner.cloud-reg.sock"]
         args:
         - "--v=5"
         - "--csi-address=$(ADDRESS)"
@@ -41,7 +37,7 @@ spec:
         - name: ADDRESS
           value: /csi/csi.sock
         - name: DRIVER_REG_SOCK_PATH
-          value: /var/lib/kubelet/plugins_registry/csi.hetzner.cloud/csi.sock
+          value: /var/lib/kubelet/plugins_registry/csi.ionos.com/csi.sock
         - name: KUBE_NODE_NAME
           valueFrom:
             fieldRef:
@@ -54,7 +50,7 @@ spec:
           mountPath: /csi
         - name: registration-dir
           mountPath: /registration
-      - name: ionos-csi-node
+      - name: ionos-csi-driver
         image: {{ index .Values.images "csi-driver-node" }}
         env:
         - name: NODE_NAME
@@ -116,7 +112,7 @@ spec:
             type: DirectoryOrCreate
         - name: plugin-dir
           hostPath:
-            path: /var/lib/kubelet/plugins_registry/csi.hetzner.cloud
+            path: /var/lib/kubelet/plugins_registry/csi.ionos.com
             type: DirectoryOrCreate
         - name: pods-mount-dir
           hostPath:

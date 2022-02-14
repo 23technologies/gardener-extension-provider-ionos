@@ -49,7 +49,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-        - name: ionos-csi-attacher
+        - name: csi-attacher
           image: {{ index .Values.images "csi-attacher" }}
           args:
             - "--v=4"
@@ -70,7 +70,7 @@ spec:
             - name: csi-attacher
               mountPath: /var/lib/csi-attacher
 {{- if .Values.resizerEnabled }}
-        - name: ionos-csi-resizer
+        - name: csi-resizer
           image: {{ index .Values.images "csi-resizer" }}
           args:
             - "--v=4"
@@ -119,7 +119,7 @@ spec:
             - mountPath: /etc/ie-csi/clouds
               name: clouds-dir
               readOnly: true
-        - name: ionos-csi-provisioner
+        - name: csi-provisioner
           image: {{ index .Values.images "csi-provisioner" }}
           args:
             - "--v=4"
