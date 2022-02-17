@@ -3,6 +3,8 @@ apiVersion: apps/v1
 metadata:
   name: ionos-csi-node
   namespace: kube-system
+  labels:
+    app: ionos-csi-node
 spec:
   selector:
     matchLabels:
@@ -11,6 +13,11 @@ spec:
     type: "RollingUpdate"
   template:
     metadata:
+      {{- if .Values.global.useProjectedTokenMount }}
+      annotations:
+        # @TODO: Remove in a future release.
+        security.gardener.cloud/trigger: rollout
+      {{- end }}
       labels:
         app: ionos-csi-node
         role: ionos-csi
@@ -20,12 +27,12 @@ spec:
       priorityClassName: system-node-critical
       serviceAccount: csi-driver-node
       tolerations:
-        - effect: NoSchedule
-          operator: Exists
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - effect: NoExecute
-          operator: Exists
+      - effect: NoSchedule
+        operator: Exists
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
       containers:
       - name: csi-node-driver-registrar
         image: {{ index .Values.images "csi-node-driver-registrar" }}
@@ -74,19 +81,19 @@ spec:
             add: ["SYS_ADMIN"]
           allowPrivilegeEscalation: true
         volumeMounts:
-          - name: plugin-dir
-            mountPath: /csi
-          - name: pods-mount-dir
-            mountPath: /var/lib/kubelet
-            # needed so that any mounts setup inside this container are
-            # propagated back to the host machine.
-            mountPropagation: "Bidirectional"
-          - name: device-dir
-            mountPath: /dev
+        - name: plugin-dir
+          mountPath: /csi
+        - name: pods-mount-dir
+          mountPath: /var/lib/kubelet
+          # needed so that any mounts setup inside this container are
+          # propagated back to the host machine.
+          mountPropagation: "Bidirectional"
+        - name: device-dir
+          mountPath: /dev
         ports:
-          - name: healthz
-            containerPort: 9808
-            protocol: TCP
+        - name: healthz
+          containerPort: 9808
+          protocol: TCP
         livenessProbe:
           httpGet:
             path: /healthz
@@ -98,26 +105,26 @@ spec:
       - name: liveness-probe
         image: {{ index .Values.images "liveness-probe" }}
         args:
-          - "--csi-address=$(ADDRESS)"
+        - "--csi-address=$(ADDRESS)"
         env:
-          - name: ADDRESS
-            value: /csi/csi.sock
+        - name: ADDRESS
+          value: /csi/csi.sock
         volumeMounts:
           - name: plugin-dir
             mountPath: /csi
       volumes:
-        - name: registration-dir
-          hostPath:
-            path: /var/lib/kubelet/plugins_registry
-            type: DirectoryOrCreate
-        - name: plugin-dir
-          hostPath:
-            path: /var/lib/kubelet/plugins_registry/csi.ionos.com
-            type: DirectoryOrCreate
-        - name: pods-mount-dir
-          hostPath:
-            path: /var/lib/kubelet
-            type: Directory
-        - name: device-dir
-          hostPath:
-            path: /dev
+      - name: registration-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins_registry
+          type: DirectoryOrCreate
+      - name: plugin-dir
+        hostPath:
+          path: /var/lib/kubelet/plugins_registry/csi.ionos.com
+          type: DirectoryOrCreate
+      - name: pods-mount-dir
+        hostPath:
+          path: /var/lib/kubelet
+          type: Directory
+      - name: device-dir
+        hostPath:
+          path: /dev

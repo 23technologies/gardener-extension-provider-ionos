@@ -22,8 +22,8 @@ import (
 
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis"
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis/mock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo/v2/extensions/table"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 )

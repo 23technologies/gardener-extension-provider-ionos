@@ -1,103 +1,14 @@
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: system:cloud-controller-manager
-rules:
-# Events are used when our actual implementation is called.
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
-  - update
-# For zones and instances all node operations are required.
-# For load balancers, nodes are watched for changes and listed on startup.
-# Our custom behavior also requires listing.
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - '*'
-- apiGroups:
-  - ""
-  resources:
-  - nodes/status
-  verbs:
-  - patch
-# Services are watched for changes and listed on startup.
-- apiGroups:
-  - ""
-  resources:
-  - services
-  - services/status
-  verbs:
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - create
-  - get
-# Service statuses need be updated when a load balancer IP changed.
-- apiGroups:
-  - ""
-  resources:
-  - services/status
-  verbs:
-  - update
-  - patch
-# Endpoints are used to store which replication's pod became leader.
-- apiGroups:
-  - ""
-  resources:
-  - endpoints
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-# Config maps are used to note explicit IPs. This is our custom behavior.
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - "*"
-# The CCM automatically starts a PV controller even though we don't use it.
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumes
-  verbs:
-  - '*'
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - create
-  - get
-  - update
-  - delete
----
+{{- if .Values.global.useTokenRequestor }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: system:cloud-controller-manager
+  name: extensions.gardener.cloud:{{ .Values.providerName }}:cloud-controller-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: system:cloud-controller-manager
+  name: cluster-admin
 subjects:
 - kind: ServiceAccount
   name: cloud-controller-manager
   namespace: kube-system
+{{- end }}

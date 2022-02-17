@@ -34,6 +34,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/chart"
+	gardenerutils "github.com/gardener/gardener/pkg/utils/gardener"
 	k8sutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/secrets"
 	"github.com/go-logr/logr"
@@ -46,204 +47,221 @@ import (
 	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 )
 
-var controlPlaneSecrets = &secrets.Secrets{
-	CertificateSecretConfigs: map[string]*secrets.CertificateSecretConfig{
-		v1beta1constants.SecretNameCACluster: {
-			Name:       v1beta1constants.SecretNameCACluster,
-			CommonName: "kubernetes",
-			CertType:   secrets.CACert,
+func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
+	return &secrets.Secrets{
+		CertificateSecretConfigs: map[string]*secrets.CertificateSecretConfig{
+			v1beta1constants.SecretNameCACluster: {
+				Name:       v1beta1constants.SecretNameCACluster,
+				CommonName: "kubernetes",
+				CertType:   secrets.CACert,
+			},
 		},
-	},
 	SecretConfigsFunc: func(cas map[string]*secrets.Certificate, clusterName string) []secrets.ConfigInterface {
-		return []secrets.ConfigInterface{
-			&secrets.ControlPlaneSecretConfig{
-				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:         ionos.CloudControllerManagerName,
-					CommonName:   "system:cloud-controller-manager",
-					Organization: []string{user.SystemPrivilegedGroup},
-					CertType:     secrets.ClientCert,
-					SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-				},
-				KubeConfigRequests: []secrets.KubeConfigRequest{
-					{
-						ClusterName:  clusterName,
-						APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+			out := []secrets.ConfigInterface{
+				&secrets.ControlPlaneSecretConfig{
+					CertificateSecretConfig: &secrets.CertificateSecretConfig{
+						Name:       ionos.CloudControllerManagerServerName,
+						CommonName: ionos.CloudControllerManagerName,
+						DNSNames:   k8sutils.DNSNamesForService(ionos.CloudControllerManagerName, clusterName),
+						CertType:   secrets.ServerCert,
+						SigningCA:  cas[v1beta1constants.SecretNameCACluster],
 					},
 				},
-			},
-			&secrets.ControlPlaneSecretConfig{
-				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:       ionos.CloudControllerManagerServerName,
-					CommonName: ionos.CloudControllerManagerName,
-					DNSNames:   k8sutils.DNSNamesForService(ionos.CloudControllerManagerName, clusterName),
-					CertType:   secrets.ServerCert,
-					SigningCA:  cas[v1beta1constants.SecretNameCACluster],
-				},
-			},
-			&secrets.ControlPlaneSecretConfig{
-				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:         ionos.CSIAttacherName,
-					CommonName:   ionos.UsernamePrefix + ionos.CSIAttacherName,
-					Organization: []string{user.SystemPrivilegedGroup},
-					CertType:     secrets.ClientCert,
-					SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-				},
-				KubeConfigRequests: []secrets.KubeConfigRequest{
-					{
-						ClusterName:  clusterName,
-						APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+			}
+
+			if !useTokenRequestor {
+				out = append(
+					out,
+					&secrets.ControlPlaneSecretConfig{
+						CertificateSecretConfig: &secrets.CertificateSecretConfig{
+							Name:         ionos.CSIAttacherName,
+							CommonName:   ionos.UsernamePrefix + ionos.CSIAttacherName,
+							Organization: []string{user.SystemPrivilegedGroup},
+							CertType:     secrets.ClientCert,
+							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
+						},
+						KubeConfigRequests: []secrets.KubeConfigRequest{
+							{
+								ClusterName:  clusterName,
+								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+							},
+						},
 					},
-				},
-			},
-			&secrets.ControlPlaneSecretConfig{
-				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:         ionos.CSIProvisionerName,
-					CommonName:   ionos.UsernamePrefix + ionos.CSIProvisionerName,
-					Organization: []string{user.SystemPrivilegedGroup},
-					CertType:     secrets.ClientCert,
-					SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-				},
-				KubeConfigRequests: []secrets.KubeConfigRequest{
-					{
-						ClusterName:  clusterName,
-						APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+					&secrets.ControlPlaneSecretConfig{
+						CertificateSecretConfig: &secrets.CertificateSecretConfig{
+							Name:         ionos.CSIProvisionerName,
+							CommonName:   ionos.UsernamePrefix + ionos.CSIProvisionerName,
+							Organization: []string{user.SystemPrivilegedGroup},
+							CertType:     secrets.ClientCert,
+							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
+						},
+						KubeConfigRequests: []secrets.KubeConfigRequest{
+							{
+								ClusterName:  clusterName,
+								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+							},
+						},
 					},
-				},
-			},
-			&secrets.ControlPlaneSecretConfig{
-				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:         ionos.CSIControllerName,
-					CommonName:   ionos.UsernamePrefix + ionos.CSIControllerName,
-					Organization: []string{user.SystemPrivilegedGroup},
-					CertType:     secrets.ClientCert,
-					SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-				},
-				KubeConfigRequests: []secrets.KubeConfigRequest{
-					{
-						ClusterName:  clusterName,
-						APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+					&secrets.ControlPlaneSecretConfig{
+						CertificateSecretConfig: &secrets.CertificateSecretConfig{
+							Name:         ionos.CSIControllerName,
+							CommonName:   ionos.UsernamePrefix + ionos.CSIControllerName,
+							Organization: []string{user.SystemPrivilegedGroup},
+							CertType:     secrets.ClientCert,
+							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
+						},
+						KubeConfigRequests: []secrets.KubeConfigRequest{
+							{
+								ClusterName:  clusterName,
+								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+							},
+						},
 					},
-				},
-			},
-			&secrets.ControlPlaneSecretConfig{
-				CertificateSecretConfig: &secrets.CertificateSecretConfig{
-					Name:         ionos.CSIResizerName,
-					CommonName:   ionos.UsernamePrefix + ionos.CSIResizerName,
-					Organization: []string{user.SystemPrivilegedGroup},
-					CertType:     secrets.ClientCert,
-					SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-				},
-				KubeConfigRequests: []secrets.KubeConfigRequest{
-					{
-						ClusterName:  clusterName,
-						APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+					&secrets.ControlPlaneSecretConfig{
+						CertificateSecretConfig: &secrets.CertificateSecretConfig{
+							Name:         ionos.CSIResizerName,
+							CommonName:   ionos.UsernamePrefix + ionos.CSIResizerName,
+							Organization: []string{user.SystemPrivilegedGroup},
+							CertType:     secrets.ClientCert,
+							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
+						},
+						KubeConfigRequests: []secrets.KubeConfigRequest{
+							{
+								ClusterName:  clusterName,
+								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
+							},
+						},
 					},
-				},
-			},
-		}
-	},
+				)
+			}
+
+			return out
+		},
+	}
 }
 
-var configChart = &chart.Chart{
-	Name: "cloud-provider-config",
-	Path: filepath.Join(ionos.InternalChartsPath, "cloud-provider-config"),
-	Objects: []*chart.Object{
-		{Type: &corev1.ConfigMap{}, Name: ionos.CloudProviderConfig},
-	},
+func shootAccessSecretsFunc(namespace string) []*gardenerutils.ShootAccessSecret {
+	return []*gardenerutils.ShootAccessSecret{
+		gardenerutils.NewShootAccessSecret(ionos.CloudControllerManagerName, namespace),
+		gardenerutils.NewShootAccessSecret(ionos.CSIAttacherName, namespace),
+		gardenerutils.NewShootAccessSecret(ionos.CSIProvisionerName, namespace),
+		gardenerutils.NewShootAccessSecret(ionos.CSIControllerName, namespace),
+		gardenerutils.NewShootAccessSecret(ionos.CSIResizerName, namespace),
+	}
 }
 
-var controlPlaneChart = &chart.Chart{
-	Name: "seed-controlplane",
-	Path: filepath.Join(ionos.InternalChartsPath, "seed-controlplane"),
-	SubCharts: []*chart.Chart{
-		{
-			Name:   "ionos-cloud-controller-manager",
-			Images: []string{ionos.CloudControllerImageName},
-			Objects: []*chart.Object{
-				{Type: &corev1.Service{}, Name: ionos.CloudControllerManagerName},
-				{Type: &appsv1.Deployment{}, Name: ionos.CloudControllerManagerName},
-				{Type: &corev1.ConfigMap{}, Name: ionos.CloudControllerManagerName + "-observability-config"},
-				{Type: &autoscalingv1beta2.VerticalPodAutoscaler{}, Name: ionos.CloudControllerManagerName + "-vpa"},
-			},
-		},
-		{
-			Name: "csi-ionos",
-			Images: []string{
-				ionos.CSIAttacherImageName,
-				ionos.CSIProvisionerImageName,
-				ionos.CSIDriverControllerImageName,
-				ionos.CSIResizerImageName,
-				ionos.LivenessProbeImageName},
-			Objects: []*chart.Object{
-				{Type: &appsv1.Deployment{}, Name: ionos.CSIControllerName},
-				{Type: &corev1.ConfigMap{}, Name: ionos.CSIControllerName + "-observability-config"},
-				{Type: &autoscalingv1beta2.VerticalPodAutoscaler{}, Name: ionos.CSIControllerName + "-vpa"},
-			},
-		},
-	},
-}
+var (
+	legacySecretNamesToCleanup = []string{
+		ionos.CloudControllerManagerName,
+		ionos.CSIAttacherName,
+		ionos.CSIProvisionerName,
+		ionos.CSIControllerName,
+		ionos.CSIResizerName,
+	}
 
-var controlPlaneShootChart = &chart.Chart{
-	Name: "shoot-system-components",
-	Path: filepath.Join(ionos.InternalChartsPath, "shoot-system-components"),
-	SubCharts: []*chart.Chart{
-		{
-			Name: "ionos-cloud-controller-manager",
-			Objects: []*chart.Object{
-				{Type: &rbacv1.ClusterRole{}, Name: "system:cloud-controller-manager"},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: "system:cloud-controller-manager"},
-				{Type: &rbacv1.ClusterRole{}, Name: "system:controller:cloud-node-controller"},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: "system:controller:cloud-node-controller"},
-			},
+	configChart = &chart.Chart{
+		Name: "cloud-provider-config",
+		Path: filepath.Join(ionos.InternalChartsPath, "cloud-provider-config"),
+		Objects: []*chart.Object{
+			{Type: &corev1.ConfigMap{}, Name: ionos.CloudProviderConfig},
 		},
-		{
-			Name: "csi-ionos",
-			Images: []string{
-				ionos.CSINodeDriverRegistrarImageName,
-				ionos.CSIDriverNodeImageName,
-				ionos.LivenessProbeImageName,
-			},
-			Objects: []*chart.Object{
-				// csi-driver
-				{Type: &appsv1.DaemonSet{}, Name: ionos.CSINodeName},
-				{Type: &corev1.ServiceAccount{}, Name: ionos.CSIDriverName + "-node"},
-				{Type: &rbacv1.ClusterRole{}, Name: ionos.UsernamePrefix + ionos.CSIDriverName},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIDriverName},
-				{Type: &policyv1beta1.PodSecurityPolicy{}, Name: strings.Replace(ionos.UsernamePrefix+ionos.CSIDriverName, ":", ".", -1)},
-				// csi-provisioner
-				{Type: &rbacv1.ClusterRole{}, Name: ionos.UsernamePrefix + ionos.CSIProvisionerName},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIProvisionerName},
-				{Type: &rbacv1.Role{}, Name: ionos.UsernamePrefix + ionos.CSIProvisionerName},
-				{Type: &rbacv1.RoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIProvisionerName},
-				// csi-attacher
-				{Type: &rbacv1.ClusterRole{}, Name: ionos.UsernamePrefix + ionos.CSIAttacherName},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIAttacherName},
-				{Type: &rbacv1.Role{}, Name: ionos.UsernamePrefix + ionos.CSIAttacherName},
-				{Type: &rbacv1.RoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIAttacherName},
-				// csi-resizer
-				{Type: &rbacv1.ClusterRole{}, Name: ionos.UsernamePrefix + ionos.CSIResizerName},
-				{Type: &rbacv1.ClusterRoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIResizerName},
-				{Type: &rbacv1.Role{}, Name: ionos.UsernamePrefix + ionos.CSIResizerName},
-				{Type: &rbacv1.RoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIResizerName},
-			},
-		},
-	},
-}
+	}
 
-var storageClassChart = &chart.Chart{
-	Name: "shoot-storageclasses",
-	Path: filepath.Join(ionos.InternalChartsPath, "shoot-storageclasses"),
-}
+	controlPlaneChart = &chart.Chart{
+		Name: "seed-controlplane",
+		Path: filepath.Join(ionos.InternalChartsPath, "seed-controlplane"),
+		SubCharts: []*chart.Chart{
+			{
+				Name:   "ionos-cloud-controller-manager",
+				Images: []string{ionos.CloudControllerImageName},
+				Objects: []*chart.Object{
+					{Type: &corev1.Service{}, Name: ionos.CloudControllerManagerName},
+					{Type: &appsv1.Deployment{}, Name: ionos.CloudControllerManagerName},
+					{Type: &corev1.ConfigMap{}, Name: ionos.CloudControllerManagerName + "-observability-config"},
+					{Type: &autoscalingv1beta2.VerticalPodAutoscaler{}, Name: ionos.CloudControllerManagerName + "-vpa"},
+				},
+			},
+			{
+				Name: "csi-ionos",
+				Images: []string{
+					ionos.CSIAttacherImageName,
+					ionos.CSIProvisionerImageName,
+					ionos.CSIDriverControllerImageName,
+					ionos.CSIResizerImageName,
+					ionos.LivenessProbeImageName},
+				Objects: []*chart.Object{
+					{Type: &appsv1.Deployment{}, Name: ionos.CSIControllerName},
+					{Type: &corev1.ConfigMap{}, Name: ionos.CSIControllerName + "-observability-config"},
+					{Type: &autoscalingv1beta2.VerticalPodAutoscaler{}, Name: ionos.CSIControllerName + "-vpa"},
+				},
+			},
+		},
+	}
+
+	controlPlaneShootChart = &chart.Chart{
+		Name: "shoot-system-components",
+		Path: filepath.Join(ionos.InternalChartsPath, "shoot-system-components"),
+		SubCharts: []*chart.Chart{
+			{
+				Name: "ionos-cloud-controller-manager",
+				Objects: []*chart.Object{
+					{Type: &rbacv1.ClusterRole{}, Name: "system:cloud-controller-manager"},
+					{Type: &rbacv1.ClusterRoleBinding{}, Name: "system:cloud-controller-manager"},
+					{Type: &rbacv1.ClusterRole{}, Name: "system:controller:cloud-node-controller"},
+					{Type: &rbacv1.ClusterRoleBinding{}, Name: "system:controller:cloud-node-controller"},
+				},
+			},
+			{
+				Name: "csi-ionos",
+				Images: []string{
+					ionos.CSINodeDriverRegistrarImageName,
+					ionos.CSIDriverNodeImageName,
+					ionos.LivenessProbeImageName,
+				},
+				Objects: []*chart.Object{
+					// csi-driver
+					{Type: &appsv1.DaemonSet{}, Name: ionos.CSINodeName},
+					{Type: &corev1.ServiceAccount{}, Name: ionos.CSIDriverName + "-node"},
+					{Type: &rbacv1.ClusterRole{}, Name: ionos.UsernamePrefix + ionos.CSIDriverName},
+					{Type: &rbacv1.ClusterRoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIDriverName},
+					{Type: &policyv1beta1.PodSecurityPolicy{}, Name: strings.Replace(ionos.UsernamePrefix+ionos.CSIDriverName, ":", ".", -1)},
+					// csi-provisioner
+					{Type: &rbacv1.ClusterRole{}, Name: ionos.UsernamePrefix + ionos.CSIProvisionerName},
+					{Type: &rbacv1.ClusterRoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIProvisionerName},
+					{Type: &rbacv1.Role{}, Name: ionos.UsernamePrefix + ionos.CSIProvisionerName},
+					{Type: &rbacv1.RoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIProvisionerName},
+					// csi-attacher
+					{Type: &rbacv1.ClusterRole{}, Name: ionos.UsernamePrefix + ionos.CSIAttacherName},
+					{Type: &rbacv1.ClusterRoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIAttacherName},
+					{Type: &rbacv1.Role{}, Name: ionos.UsernamePrefix + ionos.CSIAttacherName},
+					{Type: &rbacv1.RoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIAttacherName},
+					// csi-resizer
+					{Type: &rbacv1.ClusterRole{}, Name: ionos.UsernamePrefix + ionos.CSIResizerName},
+					{Type: &rbacv1.ClusterRoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIResizerName},
+					{Type: &rbacv1.Role{}, Name: ionos.UsernamePrefix + ionos.CSIResizerName},
+					{Type: &rbacv1.RoleBinding{}, Name: ionos.UsernamePrefix + ionos.CSIResizerName},
+				},
+			},
+		},
+	}
+
+	storageClassChart = &chart.Chart{
+		Name: "shoot-storageclasses",
+		Path: filepath.Join(ionos.InternalChartsPath, "shoot-storageclasses"),
+	}
+)
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
 //
 // PARAMETERS
 // logger   logr.Logger Logger instance
 // gardenID string      Garden ID
-func NewValuesProvider(logger logr.Logger, gardenID string) genericactuator.ValuesProvider {
+func NewValuesProvider(logger logr.Logger, gardenID string, useTokenRequestor, useProjectedTokenMount bool) genericactuator.ValuesProvider {
 	return &valuesProvider{
 		logger:   logger.WithName("ionos-values-provider"),
 		gardenID: gardenID,
+		useTokenRequestor:      useTokenRequestor,
+		useProjectedTokenMount: useProjectedTokenMount,
 	}
 }
 
@@ -251,8 +269,11 @@ func NewValuesProvider(logger logr.Logger, gardenID string) genericactuator.Valu
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
 	common.ClientContext
-	logger   logr.Logger
-	gardenID string
+
+	logger                 logr.Logger
+	gardenID               string
+	useTokenRequestor      bool
+	useProjectedTokenMount bool
 }
 
 // GetConfigChartValues returns the values for the config chart applied by the generic actuator.
@@ -427,6 +448,9 @@ func (vp *valuesProvider) getControlPlaneChartValues(
 	credentialsData := credentials.IonosCSI()
 
 	values := map[string]interface{}{
+		"global": map[string]interface{}{
+			"useTokenRequestor": vp.useTokenRequestor,
+		},
 		"ionos-cloud-controller-manager": map[string]interface{}{
 			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 			"clusterName":       clusterID,
@@ -494,6 +518,10 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	}
 
 	values := map[string]interface{}{
+		"global": map[string]interface{}{
+			"useTokenRequestor":      vp.useTokenRequestor,
+			"useProjectedTokenMount": vp.useProjectedTokenMount,
+		},
 		"csi-ionos": map[string]interface{}{
 			// "serverName":  serverName,
 			"clusterID":         csiClusterID,
