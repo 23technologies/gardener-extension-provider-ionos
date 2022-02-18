@@ -112,7 +112,7 @@ spec:
         - name: ionos-csi-controller
           image: {{ index .Values.images "csi-driver-controller" }}
           env:
-            - name: KUBECONFIG
+          - name: KUBECONFIG
           {{- if .Values.global.useTokenRequestor }}
             value: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
           {{- else }}
@@ -131,16 +131,16 @@ spec:
 {{ toYaml .Values.resources.controller | indent 12 }}
 {{- end }}
           volumeMounts:
-            - mountPath: /var/lib/csi/sockets/pluginproxy/
-              name: socket-dir
-            - name: ionos-csi-controller
-              mountPath: /var/lib/ionos-csi-controller
-            - mountPath: /etc/ie-csi
-              name: ie-csi-dir
-              readOnly: true
-            - mountPath: /etc/ie-csi/clouds
-              name: clouds-dir
-              readOnly: true
+          - mountPath: /var/lib/csi/sockets/pluginproxy/
+            name: socket-dir
+          - name: ionos-csi-controller
+            mountPath: /var/lib/ionos-csi-controller
+          - mountPath: /etc/ie-csi
+            name: ie-csi-dir
+            readOnly: true
+          - mountPath: /etc/ie-csi/clouds
+            name: clouds-dir
+            readOnly: true
         - name: csi-provisioner
           image: {{ index .Values.images "csi-provisioner" }}
           args:

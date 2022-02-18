@@ -74,7 +74,7 @@ spec:
         name: ionos-cloud-controller-manager
         command: [ "/app/ionos-ccm" ]
         args:
-          - --cloud-provider=ionos
+        - --cloud-provider=ionos
         {{- include "cloud-controller-manager.featureGates" . | trimSuffix "," | indent 8 }}
         {{- if .Values.global.useTokenRequestor }}
         - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
