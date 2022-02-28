@@ -73,3 +73,5 @@ gardener:
       provider:
         providerConfig:
           fsType: ext4
+
+healthPort: 8081
