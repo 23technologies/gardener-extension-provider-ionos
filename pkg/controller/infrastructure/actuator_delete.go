@@ -52,26 +52,30 @@ func (a *actuator) delete(ctx context.Context, infra *extensionsv1alpha1.Infrast
 	if nil != infraStatus {
 		isDeleted := false
 
-		labels, _, err := client.LabelApi.DatacentersLabelsGet(ctx, infraStatus.DatacenterID).Depth(1).Execute()
-		if nil != err {
+		labels, httpResponse, err := client.LabelApi.DatacentersLabelsGet(ctx, infraStatus.DatacenterID).Depth(1).Execute()
+		if 404 == httpResponse.StatusCode {
+			isDeleted = true
+		} else {
 			return err
 		}
 
-		for _, label := range *labels.Items {
-			if nil != label.Properties && "cluster" == *label.Properties.Key {
-				clusterValue, err := hex.DecodeString(*label.Properties.Value)
-				if nil != err {
-					continue
-				}
-
-				if infra.Namespace == string(clusterValue) {
-					err = ensurer.EnsureDatacenterDeleted(ctx, client, infraStatus.DatacenterID)
-					if err != nil {
-						return err
+		if !isDeleted {
+			for _, label := range *labels.Items {
+				if nil != label.Properties && "cluster" == *label.Properties.Key {
+					clusterValue, err := hex.DecodeString(*label.Properties.Value)
+					if nil != err {
+						continue
 					}
 
-					isDeleted = true
-					break
+					if infra.Namespace == string(clusterValue) {
+						err = ensurer.EnsureDatacenterDeleted(ctx, client, infraStatus.DatacenterID)
+						if err != nil {
+							return err
+						}
+
+						isDeleted = true
+						break
+					}
 				}
 			}
 		}
