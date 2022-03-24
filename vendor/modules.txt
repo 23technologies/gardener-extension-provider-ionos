@@ -61,7 +61,7 @@ github.com/gardener/etcd-druid/api/v1alpha1
 ## explicit; go 1.14
 github.com/gardener/external-dns-management/pkg/apis/dns
 github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1
-# github.com/gardener/gardener v1.42.2
+# github.com/gardener/gardener v1.42.3
 ## explicit; go 1.16
 github.com/gardener/gardener/.github
 github.com/gardener/gardener/.github/ISSUE_TEMPLATE
@@ -125,6 +125,7 @@ github.com/gardener/gardener/pkg/controllerutils/reconciler
 github.com/gardener/gardener/pkg/extensions
 github.com/gardener/gardener/pkg/gardenlet/apis/config
 github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1
+github.com/gardener/gardener/pkg/healthz
 github.com/gardener/gardener/pkg/logger
 github.com/gardener/gardener/pkg/mock/controller-runtime/client
 github.com/gardener/gardener/pkg/operation/botanist/component/extensions/operatingsystemconfig/original/components
