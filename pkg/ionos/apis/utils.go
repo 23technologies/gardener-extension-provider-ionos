@@ -42,9 +42,7 @@ func FindMachineImageName(ctx context.Context, client *ionossdk.APIClient, zone,
 		customImageNameVariant = fmt.Sprintf("%s-%s", name, version)
 	}
 
-	defaultImageNameVariant := fmt.Sprintf("%s-%s.qcow2", name, version)
-	defaultImageNameVariantWithCloudInit := fmt.Sprintf("%s-%s-cloud-init.qcow2", name, version)
-
+	defaultImageNameVariant := fmt.Sprintf("%s-%s", name, version)
 	location := strings.Replace(zone, "-", "/", 1)
 
 	for _, image := range *images.Items {
@@ -56,7 +54,7 @@ func FindMachineImageName(ctx context.Context, client *ionossdk.APIClient, zone,
 			continue
 		} else if (!image.Properties.HasCloudInit() || "NONE" == *image.Properties.CloudInit) {
 			continue
-		} else if customImageNameVariant != imageName && defaultImageNameVariant != imageName && defaultImageNameVariantWithCloudInit != imageName {
+		} else if customImageNameVariant != imageName && !strings.HasPrefix(imageName, defaultImageNameVariant) {
 			continue
 		}
 
