@@ -59,8 +59,8 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 	SecretConfigsFunc: func(cas map[string]*secrets.Certificate, clusterName string) []secrets.ConfigInterface {
 			out := []secrets.ConfigInterface{
 				&secrets.ControlPlaneSecretConfig{
+					Name: ionos.CloudControllerManagerServerName,
 					CertificateSecretConfig: &secrets.CertificateSecretConfig{
-						Name:       ionos.CloudControllerManagerServerName,
 						CommonName: ionos.CloudControllerManagerName,
 						DNSNames:   k8sutils.DNSNamesForService(ionos.CloudControllerManagerName, clusterName),
 						CertType:   secrets.ServerCert,
@@ -73,8 +73,8 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 				out = append(
 					out,
 					&secrets.ControlPlaneSecretConfig{
+						Name: ionos.CloudControllerManagerName,
 						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							Name:         ionos.CloudControllerManagerName,
 							CommonName:   "system:cloud-controller-manager",
 							Organization: []string{user.SystemPrivilegedGroup},
 							CertType:     secrets.ClientCert,
@@ -88,8 +88,8 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 						},
 					},
 					&secrets.ControlPlaneSecretConfig{
+						Name: ionos.CSIAttacherName,
 						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							Name:         ionos.CSIAttacherName,
 							CommonName:   ionos.UsernamePrefix + ionos.CSIAttacherName,
 							Organization: []string{user.SystemPrivilegedGroup},
 							CertType:     secrets.ClientCert,
@@ -103,8 +103,8 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 						},
 					},
 					&secrets.ControlPlaneSecretConfig{
+						Name: ionos.CSIProvisionerName,
 						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							Name:         ionos.CSIProvisionerName,
 							CommonName:   ionos.UsernamePrefix + ionos.CSIProvisionerName,
 							Organization: []string{user.SystemPrivilegedGroup},
 							CertType:     secrets.ClientCert,
@@ -118,8 +118,8 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 						},
 					},
 					&secrets.ControlPlaneSecretConfig{
+						Name: ionos.CSIControllerName,
 						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							Name:         ionos.CSIControllerName,
 							CommonName:   ionos.UsernamePrefix + ionos.CSIControllerName,
 							Organization: []string{user.SystemPrivilegedGroup},
 							CertType:     secrets.ClientCert,
@@ -133,8 +133,8 @@ func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
 						},
 					},
 					&secrets.ControlPlaneSecretConfig{
+						Name: ionos.CSIResizerName,
 						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							Name:         ionos.CSIResizerName,
 							CommonName:   ionos.UsernamePrefix + ionos.CSIResizerName,
 							Organization: []string{user.SystemPrivilegedGroup},
 							CertType:     secrets.ClientCert,
