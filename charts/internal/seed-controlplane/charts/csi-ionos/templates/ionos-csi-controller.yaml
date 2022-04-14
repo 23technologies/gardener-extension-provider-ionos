@@ -54,15 +54,18 @@ spec:
           args:
           - "--timeout=300s"
           - "--csi-address=$(ADDRESS)"
-          - "--leader-election"
           {{- if .Values.global.useTokenRequestor }}
           - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
           {{- else }}
           - --kubeconfig=/var/lib/csi-attacher/kubeconfig
           {{- end }}
+          - "--leader-election"
+          - "--leader-election-namespace=$(CSI_NAMESPACE)"
           env:
-            - name: ADDRESS
-              value: /csi/csi.sock
+          - name: ADDRESS
+            value: /csi/csi.sock
+          - name: CSI_NAMESPACE
+            value: kube-system
 {{- if .Values.resources.attacher }}
           resources:
 {{ toYaml .Values.resources.attacher | indent 12 }}
@@ -84,15 +87,18 @@ spec:
           args:
           - "--csiTimeout=300s"
           - "--csi-address=$(ADDRESS)"
-          - "--leader-election"
           {{- if .Values.global.useTokenRequestor }}
           - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
           {{- else }}
           - --kubeconfig=/var/lib/csi-resizer/kubeconfig
           {{- end }}
+          - "--leader-election"
+          - "--leader-election-namespace=$(CSI_NAMESPACE)"
           env:
-            - name: ADDRESS
-              value: /csi/csi.sock
+          - name: ADDRESS
+            value: /csi/csi.sock
+          - name: CSI_NAMESPACE
+            value: kube-system
 {{- if .Values.resources.resizer }}
           resources:
 {{ toYaml .Values.resources.resizer | indent 12 }}
@@ -148,15 +154,18 @@ spec:
           - "--csi-address=$(ADDRESS)"
           - "--feature-gates=Topology=true"
           - "--strict-topology"
-          - "--leader-election"
           {{- if .Values.global.useTokenRequestor }}
           - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
           {{- else }}
           - --kubeconfig=/var/lib/csi-provisioner/kubeconfig
           {{- end }}
+          - "--leader-election"
+          - "--leader-election-namespace=$(CSI_NAMESPACE)"
           env:
-            - name: ADDRESS
-              value: /csi/csi.sock
+          - name: ADDRESS
+            value: /csi/csi.sock
+          - name: CSI_NAMESPACE
+            value: kube-system
 {{- if .Values.resources.provisioner }}
           resources:
 {{ toYaml .Values.resources.provisioner | indent 12 }}
