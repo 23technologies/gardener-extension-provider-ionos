@@ -21,7 +21,6 @@ import (
 	"regexp"
 
 	"github.com/23technologies/gardener-extension-provider-ionos/pkg/ionos/apis"
-
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
