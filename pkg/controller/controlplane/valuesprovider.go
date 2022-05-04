@@ -31,148 +31,27 @@ import (
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/common"
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
+	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	gardenerutils "github.com/gardener/gardener/pkg/utils/gardener"
 	k8sutils "github.com/gardener/gardener/pkg/utils/kubernetes"
-	"github.com/gardener/gardener/pkg/utils/secrets"
+	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apiserver/pkg/authentication/user"
 	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 )
 
-func getSecretConfigsFuncs(useTokenRequestor bool) secrets.Interface {
-	return &secrets.Secrets{
-		CertificateSecretConfigs: map[string]*secrets.CertificateSecretConfig{
-			v1beta1constants.SecretNameCACluster: {
-				Name:       v1beta1constants.SecretNameCACluster,
-				CommonName: "kubernetes",
-				CertType:   secrets.CACert,
-			},
-		},
-	SecretConfigsFunc: func(cas map[string]*secrets.Certificate, clusterName string) []secrets.ConfigInterface {
-			out := []secrets.ConfigInterface{
-				&secrets.ControlPlaneSecretConfig{
-					Name: ionos.CloudControllerManagerServerName,
-					CertificateSecretConfig: &secrets.CertificateSecretConfig{
-						CommonName: ionos.CloudControllerManagerName,
-						DNSNames:   k8sutils.DNSNamesForService(ionos.CloudControllerManagerName, clusterName),
-						CertType:   secrets.ServerCert,
-						SigningCA:  cas[v1beta1constants.SecretNameCACluster],
-					},
-				},
-			}
-
-			if !useTokenRequestor {
-				out = append(
-					out,
-					&secrets.ControlPlaneSecretConfig{
-						Name: ionos.CloudControllerManagerName,
-						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							CommonName:   "system:cloud-controller-manager",
-							Organization: []string{user.SystemPrivilegedGroup},
-							CertType:     secrets.ClientCert,
-							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-						},
-						KubeConfigRequests: []secrets.KubeConfigRequest{
-							{
-								ClusterName:  clusterName,
-								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
-							},
-						},
-					},
-					&secrets.ControlPlaneSecretConfig{
-						Name: ionos.CSIAttacherName,
-						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							CommonName:   ionos.UsernamePrefix + ionos.CSIAttacherName,
-							Organization: []string{user.SystemPrivilegedGroup},
-							CertType:     secrets.ClientCert,
-							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-						},
-						KubeConfigRequests: []secrets.KubeConfigRequest{
-							{
-								ClusterName:  clusterName,
-								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
-							},
-						},
-					},
-					&secrets.ControlPlaneSecretConfig{
-						Name: ionos.CSIProvisionerName,
-						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							CommonName:   ionos.UsernamePrefix + ionos.CSIProvisionerName,
-							Organization: []string{user.SystemPrivilegedGroup},
-							CertType:     secrets.ClientCert,
-							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-						},
-						KubeConfigRequests: []secrets.KubeConfigRequest{
-							{
-								ClusterName:  clusterName,
-								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
-							},
-						},
-					},
-					&secrets.ControlPlaneSecretConfig{
-						Name: ionos.CSIControllerName,
-						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							CommonName:   ionos.UsernamePrefix + ionos.CSIControllerName,
-							Organization: []string{user.SystemPrivilegedGroup},
-							CertType:     secrets.ClientCert,
-							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-						},
-						KubeConfigRequests: []secrets.KubeConfigRequest{
-							{
-								ClusterName:  clusterName,
-								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
-							},
-						},
-					},
-					&secrets.ControlPlaneSecretConfig{
-						Name: ionos.CSIResizerName,
-						CertificateSecretConfig: &secrets.CertificateSecretConfig{
-							CommonName:   ionos.UsernamePrefix + ionos.CSIResizerName,
-							Organization: []string{user.SystemPrivilegedGroup},
-							CertType:     secrets.ClientCert,
-							SigningCA:    cas[v1beta1constants.SecretNameCACluster],
-						},
-						KubeConfigRequests: []secrets.KubeConfigRequest{
-							{
-								ClusterName:  clusterName,
-								APIServerHost: v1beta1constants.DeploymentNameKubeAPIServer,
-							},
-						},
-					},
-				)
-			}
-
-			return out
-		},
-	}
-}
-
-func shootAccessSecretsFunc(namespace string) []*gardenerutils.ShootAccessSecret {
-	return []*gardenerutils.ShootAccessSecret{
-		gardenerutils.NewShootAccessSecret(ionos.CloudControllerManagerName, namespace),
-		gardenerutils.NewShootAccessSecret(ionos.CSIAttacherName, namespace),
-		gardenerutils.NewShootAccessSecret(ionos.CSIProvisionerName, namespace),
-		gardenerutils.NewShootAccessSecret(ionos.CSIControllerName, namespace),
-		gardenerutils.NewShootAccessSecret(ionos.CSIResizerName, namespace),
-	}
-}
+const (
+	caNameControlPlane = "ca-" + ionos.Name + "-controlplane"
+)
 
 var (
-	legacySecretNamesToCleanup = []string{
-		ionos.CloudControllerManagerName,
-		ionos.CSIAttacherName,
-		ionos.CSIProvisionerName,
-		ionos.CSIControllerName,
-		ionos.CSIResizerName,
-	}
-
 	configChart = &chart.Chart{
 		Name: "cloud-provider-config",
 		Path: filepath.Join(ionos.InternalChartsPath, "cloud-provider-config"),
@@ -186,7 +65,7 @@ var (
 		Path: filepath.Join(ionos.InternalChartsPath, "seed-controlplane"),
 		SubCharts: []*chart.Chart{
 			{
-				Name:   "ionos-cloud-controller-manager",
+				Name:   ionos.CloudControllerManagerName,
 				Images: []string{ionos.CloudControllerImageName},
 				Objects: []*chart.Object{
 					{Type: &corev1.Service{}, Name: ionos.CloudControllerManagerName},
@@ -196,7 +75,7 @@ var (
 				},
 			},
 			{
-				Name: "csi-ionos",
+				Name: ionos.CSIControllerName,
 				Images: []string{
 					ionos.CSIAttacherImageName,
 					ionos.CSIProvisionerImageName,
@@ -217,7 +96,7 @@ var (
 		Path: filepath.Join(ionos.InternalChartsPath, "shoot-system-components"),
 		SubCharts: []*chart.Chart{
 			{
-				Name: "ionos-cloud-controller-manager",
+				Name: ionos.CloudControllerManagerName,
 				Objects: []*chart.Object{
 					{Type: &rbacv1.ClusterRole{}, Name: "system:cloud-controller-manager"},
 					{Type: &rbacv1.ClusterRoleBinding{}, Name: "system:cloud-controller-manager"},
@@ -226,7 +105,7 @@ var (
 				},
 			},
 			{
-				Name: "csi-ionos",
+				Name: ionos.CSINodeName,
 				Images: []string{
 					ionos.CSINodeDriverRegistrarImageName,
 					ionos.CSIDriverNodeImageName,
@@ -265,17 +144,48 @@ var (
 	}
 )
 
+func getSecretConfigs(namespace string) []extensionssecretsmanager.SecretConfigWithOptions {
+	return []extensionssecretsmanager.SecretConfigWithOptions{
+		{
+			Config: &secretutils.CertificateSecretConfig{
+				Name:       caNameControlPlane,
+				CommonName: caNameControlPlane,
+				CertType:   secretutils.CACert,
+			},
+			Options: []secretsmanager.GenerateOption{secretsmanager.Persist()},
+		},
+		{
+			Config: &secretutils.CertificateSecretConfig{
+				Name:                        ionos.CloudControllerManagerServerName,
+				CommonName:                  ionos.CloudControllerManagerName,
+				DNSNames:                    k8sutils.DNSNamesForService(ionos.CloudControllerManagerName, namespace),
+				CertType:                    secretutils.ServerCert,
+				SkipPublishingCACertificate: true,
+			},
+			Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(caNameControlPlane)},
+		},
+	}
+}
+
+func getShootAccessSecrets(namespace string) []*gardenerutils.ShootAccessSecret {
+	return []*gardenerutils.ShootAccessSecret{
+		gardenerutils.NewShootAccessSecret(ionos.CloudControllerManagerName, namespace),
+		gardenerutils.NewShootAccessSecret(ionos.CSIAttacherName, namespace),
+		gardenerutils.NewShootAccessSecret(ionos.CSIProvisionerName, namespace),
+		gardenerutils.NewShootAccessSecret(ionos.CSIControllerName, namespace),
+		gardenerutils.NewShootAccessSecret(ionos.CSIResizerName, namespace),
+	}
+}
+
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
 //
 // PARAMETERS
 // logger   logr.Logger Logger instance
 // gardenID string      Garden ID
-func NewValuesProvider(logger logr.Logger, gardenID string, useTokenRequestor, useProjectedTokenMount bool) genericactuator.ValuesProvider {
+func NewValuesProvider(logger logr.Logger, gardenID string) genericactuator.ValuesProvider {
 	return &valuesProvider{
 		logger:   logger.WithName("ionos-values-provider"),
 		gardenID: gardenID,
-		useTokenRequestor:      useTokenRequestor,
-		useProjectedTokenMount: useProjectedTokenMount,
 	}
 }
 
@@ -284,10 +194,8 @@ type valuesProvider struct {
 	genericactuator.NoopValuesProvider
 	common.ClientContext
 
-	logger                 logr.Logger
-	gardenID               string
-	useTokenRequestor      bool
-	useProjectedTokenMount bool
+	logger   logr.Logger
+	gardenID string
 }
 
 // GetConfigChartValues returns the values for the config chart applied by the generic actuator.
@@ -319,15 +227,17 @@ func (vp *valuesProvider) GetConfigChartValues(
 // GetControlPlaneChartValues returns the values for the control plane chart applied by the generic actuator.
 //
 // PARAMETERS
-// ctx        context.Context                  Execution context
-// cp         *extensionsv1alpha1.ControlPlane Control plane struct
-// cluster    *extensionscontroller.Cluster    Cluster struct
-// checksums  map[string]string                Checksums
-// scaledDown bool                             True if scaled down
+// ctx           context.Context                  Execution context
+// cp            *extensionsv1alpha1.ControlPlane Control plane struct
+// cluster       *extensionscontroller.Cluster    Cluster struct
+// secretsReader secretsmanager.Reader            Secrets manager reader
+// checksums     map[string]string                Checksums
+// scaledDown    bool                             True if scaled down
 func (vp *valuesProvider) GetControlPlaneChartValues(
 	ctx context.Context,
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
+	secretsReader secretsmanager.Reader,
 	checksums map[string]string,
 	scaledDown bool,
 ) (map[string]interface{}, error) {
@@ -349,21 +259,23 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 	}
 
 	// Get control plane chart values
-	return vp.getControlPlaneChartValues(cpConfig, infraStatus, cp, cluster, credentials, checksums, scaledDown)
+	return vp.getControlPlaneChartValues(cpConfig, infraStatus, cp, cluster, secretsReader, credentials, checksums, scaledDown)
 }
 
 // GetControlPlaneShootChartValues returns the values for the control plane shoot chart applied by the generic actuator.
 //
 // PARAMETERS
-// ctx       context.Context                  Execution context
-// cp        *extensionsv1alpha1.ControlPlane Control plane struct
-// cluster   *extensionscontroller.Cluster    Cluster struct
-// checksums map[string]string                Checksums
+// ctx     context.Context                  Execution context
+// cp      *extensionsv1alpha1.ControlPlane Control plane struct
+// cluster *extensionscontroller.Cluster    Cluster struct
+// _       secretsmanager.Reader            Secrets manager reader
+// _       map[string]string                Checksums
 func (vp *valuesProvider) GetControlPlaneShootChartValues(
 	ctx context.Context,
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
-	checksums map[string]string,
+	_ secretsmanager.Reader,
+	_ map[string]string,
 ) (map[string]interface{}, error) {
 	// Get credentials
 	credentials, err := ionos.GetCredentials(ctx, vp.Client(), cp.Spec.SecretRef)
@@ -436,79 +348,139 @@ func (vp *valuesProvider) getConfigChartValues(
 // getControlPlaneChartValues collects and returns the control plane chart values.
 //
 // PARAMETERS
-// cpConfig    *apis.ControlPlaneConfig         Control plane config struct
+// cpConfig      *apis.ControlPlaneConfig         Control plane config struct
+// infraStatus   *apis.InfrastructureStatus       Infrastructure status struct
+// cp            *extensionsv1alpha1.ControlPlane Control plane struct
+// cluster       *extensionscontroller.Cluster    Cluster struct
+// secretsReader secretsmanager.Reader            Secrets manager reader
+// credentials   *ionos.Credentials               Credentials instance
+// checksums     map[string]string                Checksums
+// scaledDown    bool                             True if scaled down
+func (vp *valuesProvider) getControlPlaneChartValues(
+	cpConfig *apis.ControlPlaneConfig,
+	infraStatus *apis.InfrastructureStatus,
+	cp *extensionsv1alpha1.ControlPlane,
+	cluster *extensionscontroller.Cluster,
+	secretsReader secretsmanager.Reader,
+	credentials *ionos.Credentials,
+	checksums map[string]string,
+	scaledDown bool,
+) (map[string]interface{}, error) {
+	region := apis.GetRegionFromZone(cpConfig.Zone)
+	if "" == region {
+		region = cp.Spec.Region
+	}
+
+	ccmValues, err := vp.getCCMChartValues(cpConfig, infraStatus, cp, cluster, secretsReader, checksums, scaledDown, region)
+	if err != nil {
+		return nil, err
+	}
+
+	values := map[string]interface{}{
+		"global": map[string]interface{}{
+			"genericTokenKubeconfigSecretName": extensionscontroller.GenericTokenKubeconfigSecretNameFromCluster(cluster),
+		},
+		ionos.CloudControllerManagerName: ccmValues,
+		ionos.CSIControllerName:          vp.getCSIControllerChartValues(infraStatus, cp, cluster, credentials, checksums, scaledDown, region),
+	}
+
+	return values, nil
+}
+
+// getCCMChartValues collects and returns the CCM chart values.
+//
+// PARAMETERS
+// cpConfig      *apis.ControlPlaneConfig         Control plane config struct
+// infraStatus   *apis.InfrastructureStatus       Infrastructure status struct
+// cp            *extensionsv1alpha1.ControlPlane Control plane struct
+// cluster       *extensionscontroller.Cluster    Cluster struct
+// secretsReader secretsmanager.Reader            Secrets manager reader
+// checksums     map[string]string                Checksums
+// scaledDown    bool                             True if scaled down
+// region        string                           Control plane region
+func (vp *valuesProvider) getCCMChartValues(
+	cpConfig *apis.ControlPlaneConfig,
+	infraStatus *apis.InfrastructureStatus,
+	cp *extensionsv1alpha1.ControlPlane,
+	cluster *extensionscontroller.Cluster,
+	secretsReader secretsmanager.Reader,
+	checksums map[string]string,
+	scaledDown bool,
+	region string,
+) (map[string]interface{}, error) {
+	clusterID := vp.calcClusterID(cp)
+
+	ccmSecret, found := secretsReader.Get(ionos.CloudControllerManagerServerName)
+	if !found {
+		return nil, fmt.Errorf("secret %q not found", ionos.CloudControllerManagerServerName)
+	}
+
+	values := map[string]interface{}{
+		"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
+		"clusterName":       clusterID,
+		"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
+		"podAnnotations": map[string]interface{}{
+			"checksum/secret-" + v1beta1constants.SecretNameCloudProvider: checksums[v1beta1constants.SecretNameCloudProvider],
+			"checksum/configmap-" + ionos.CloudProviderConfig:            checksums[ionos.CloudProviderConfig],
+		},
+		"podLabels": map[string]interface{}{
+			v1beta1constants.LabelPodMaintenanceRestart: "true",
+		},
+		"podDatacenterID": infraStatus.DatacenterID,
+		"serverSecretName": ccmSecret.Name,
+	}
+
+	if cpConfig.CloudControllerManager != nil {
+		values["featureGates"] = cpConfig.CloudControllerManager.FeatureGates
+	}
+
+	if infraStatus.NetworkIDs != nil && infraStatus.NetworkIDs.Workers != "" {
+		values["podNetworkIDs"] = map[string]interface{}{
+			"workers": infraStatus.NetworkIDs.Workers,
+		}
+	}
+
+	return values, nil
+}
+
+// getCSIControllerChartValues collects and returns the CSIController chart values.
+//
+// PARAMETERS
 // infraStatus *apis.InfrastructureStatus       Infrastructure status struct
 // cp          *extensionsv1alpha1.ControlPlane Control plane struct
 // cluster     *extensionscontroller.Cluster    Cluster struct
 // credentials *ionos.Credentials               Credentials instance
 // checksums   map[string]string                Checksums
 // scaledDown  bool                             True if scaled down
-func (vp *valuesProvider) getControlPlaneChartValues(
-	cpConfig *apis.ControlPlaneConfig,
+// region      string                           Control plane region
+func (vp *valuesProvider) getCSIControllerChartValues(
 	infraStatus *apis.InfrastructureStatus,
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
 	credentials *ionos.Credentials,
 	checksums map[string]string,
 	scaledDown bool,
-) (map[string]interface{}, error) {
-	clusterID, csiClusterID := vp.calcClusterIDs(cp)
-
-	region := apis.GetRegionFromZone(cpConfig.Zone)
-	if "" == region {
-		region = cp.Spec.Region
-	}
-
+	region string,
+) map[string]interface{} {
 	credentialsData := credentials.IonosCSI()
+	csiClusterID := vp.calcCsiClusterID(cp)
 
-	values := map[string]interface{}{
-		"global": map[string]interface{}{
-			"useTokenRequestor": vp.useTokenRequestor,
-		},
-		"ionos-cloud-controller-manager": map[string]interface{}{
-			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
-			"clusterName":       clusterID,
-			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
-			"podAnnotations": map[string]interface{}{
-				"checksum/secret-" + ionos.CloudControllerManagerName:        checksums[ionos.CloudControllerManagerName],
-				"checksum/secret-" + ionos.CloudControllerManagerServerName:  checksums[ionos.CloudControllerManagerServerName],
-				"checksum/secret-" + v1beta1constants.SecretNameCloudProvider: checksums[v1beta1constants.SecretNameCloudProvider],
-				"checksum/configmap-" + ionos.CloudProviderConfig:            checksums[ionos.CloudProviderConfig],
-			},
-			"podLabels": map[string]interface{}{
-				v1beta1constants.LabelPodMaintenanceRestart: "true",
-			},
-			"podDatacenterID": infraStatus.DatacenterID,
-		},
-		"csi-ionos": map[string]interface{}{
-			"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
-			"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
-			"clusterID":         csiClusterID,
-			"user":              credentialsData.User,
-			"password":          credentialsData.Password,
-			"csiDatacenterID":   infraStatus.DatacenterID,
-			// "resizerEnabled":    csiResizerEnabled,
-			"podAnnotations": map[string]interface{}{
-				"checksum/secret-" + ionos.CSIProvisionerName:                checksums[ionos.CSIProvisionerName],
-				"checksum/secret-" + ionos.CSIAttacherName:                   checksums[ionos.CSIAttacherName],
-				"checksum/secret-" + ionos.CSIResizerName:                    checksums[ionos.CSIResizerName],
-				"checksum/secret-" + ionos.CSIControllerName:                 checksums[ionos.CSIControllerName],
-				"checksum/secret-" + v1beta1constants.SecretNameCloudProvider: checksums[v1beta1constants.SecretNameCloudProvider],
-			},
+	return map[string]interface{}{
+		"replicas":          extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
+		"kubernetesVersion": cluster.Shoot.Spec.Kubernetes.Version,
+		"clusterID":         csiClusterID,
+		"user":              credentialsData.User,
+		"password":          credentialsData.Password,
+		"csiDatacenterID":   infraStatus.DatacenterID,
+		// "resizerEnabled":    csiResizerEnabled,
+		"podAnnotations": map[string]interface{}{
+			"checksum/secret-" + ionos.CSIProvisionerName:                checksums[ionos.CSIProvisionerName],
+			"checksum/secret-" + ionos.CSIAttacherName:                   checksums[ionos.CSIAttacherName],
+			"checksum/secret-" + ionos.CSIResizerName:                    checksums[ionos.CSIResizerName],
+			"checksum/secret-" + ionos.CSIControllerName:                 checksums[ionos.CSIControllerName],
+			"checksum/secret-" + v1beta1constants.SecretNameCloudProvider: checksums[v1beta1constants.SecretNameCloudProvider],
 		},
 	}
-
-	if cpConfig.CloudControllerManager != nil {
-		values["ionos-cloud-controller-manager"].(map[string]interface{})["featureGates"] = cpConfig.CloudControllerManager.FeatureGates
-	}
-
-	if infraStatus.NetworkIDs != nil && infraStatus.NetworkIDs.Workers != "" {
-		values["ionos-cloud-controller-manager"].(map[string]interface{})["podNetworkIDs"] = map[string]interface{}{
-			"workers": infraStatus.NetworkIDs.Workers,
-		}
-	}
-
-	return values, nil
 }
 
 // getControlPlaneShootChartValues collects and returns the control plane shoot chart values.
@@ -522,8 +494,8 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	cluster *extensionscontroller.Cluster,
 	credentials *ionos.Credentials,
 ) (map[string]interface{}, error) {
-	_, csiClusterID := vp.calcClusterIDs(cp)
 	credentialsData := credentials.IonosCSI()
+	csiClusterID := vp.calcCsiClusterID(cp)
 
 	// Decode infrastructureProviderStatus
 	infraStatus, err := transcoder.DecodeInfrastructureStatusFromControlPlane(cp)
@@ -532,11 +504,7 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	}
 
 	values := map[string]interface{}{
-		"global": map[string]interface{}{
-			"useTokenRequestor":      vp.useTokenRequestor,
-			"useProjectedTokenMount": vp.useProjectedTokenMount,
-		},
-		"csi-ionos": map[string]interface{}{
+		ionos.CSINodeName: map[string]interface{}{
 			// "serverName":  serverName,
 			"clusterID":         csiClusterID,
 			"user":              credentialsData.User,
@@ -549,14 +517,20 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(
 	return values, nil
 }
 
-// calcClusterIDs returns the cluster ID and CSI cluster ID.
+// calcClusterID returns the cluster ID.
 //
 // PARAMETERS
 // cp *extensionsv1alpha1.ControlPlane Control plane struct
-func (vp *valuesProvider) calcClusterIDs(cp *extensionsv1alpha1.ControlPlane) (clusterID string, csiClusterID string) {
-	clusterID = cp.Namespace + "-" + vp.gardenID
-	csiClusterID = shortenID(clusterID, 63)
-	return
+func (vp *valuesProvider) calcClusterID(cp *extensionsv1alpha1.ControlPlane) string {
+	return cp.Namespace + "-" + vp.gardenID
+}
+
+// calcCsiClusterID returns the CSI cluster ID.
+//
+// PARAMETERS
+// cp *extensionsv1alpha1.ControlPlane Control plane struct
+func (vp *valuesProvider) calcCsiClusterID(cp *extensionsv1alpha1.ControlPlane) string {
+	return shortenID(vp.calcClusterID(cp), 63)
 }
 
 // shortenID returns a shortened ID with the given size.

@@ -9,6 +9,13 @@ data:
   filter-kubernetes.conf: |
     [FILTER]
         Name                parser
+        Match               kubernetes.*cloud-controller-manager*ionos-cloud-controller-manager*
+        Key_Name            log
+        Parser              kubeapiserverParser
+        Reserve_Data        True
+
+    [FILTER]
+        Name                parser
         Match               kubernetes.*machine-controller-manager*ionos-machine-controller-manager*
         Key_Name            log
         Parser              kubeapiserverParser
@@ -24,5 +31,5 @@ data:
     [FILTER]
         Name                rewrite_tag
         Match               kubernetes.*
-        Rule                $tag ^kubernetes\.var\.log\.containers\.(ionos-csi-controller-.+?_.+?_ionos-csi) user-exposed.$TAG true
+        Rule                $tag ^kubernetes\.var\.log\.containers\.(cloud-controller-manager-.+?_.+?_ionos-cloud-controller-manager|ionos-csi-controller-.+?_.+?_ionos-csi) user-exposed.$TAG true
         Emitter_Name        re_emitted-provider-ionos

@@ -27,17 +27,21 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	"github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
 var (
-	mockTestEnv mock.MockTestEnv
-	vp          genericactuator.ValuesProvider
+	mockTestEnv        mock.MockTestEnv
+	vp                 genericactuator.ValuesProvider
+	fakeSecretsManager secretsmanager.Interface
 )
 
 var _ = BeforeSuite(func() {
@@ -46,8 +50,11 @@ var _ = BeforeSuite(func() {
 	ionosapiwrapper.SetClientForUser("dummy-user", mockTestEnv.IonosClient)
 	mock.SetupImagesEndpointOnMux(mockTestEnv.Mux)
 
-	vp = NewValuesProvider(logger, "garden", true, true)
+	vp = NewValuesProvider(logger, "garden")
 	inject.ClientInto(mockTestEnv.Client, vp)
+
+	fakeClient := fakeclient.NewClientBuilder().Build()
+	fakeSecretsManager = fakesecretsmanager.New(fakeClient, mock.TestNamespace)
 })
 
 var _ = AfterSuite(func() {
@@ -93,7 +100,7 @@ var _ = Describe("ValuesProvider", func() {
 				decodedCluster, err := mock.DecodeCluster(data.action.cluster)
 				Expect(err).NotTo(HaveOccurred())
 
-				values, err := vp.GetControlPlaneChartValues(ctx, data.action.cp, decodedCluster, map[string]string{}, data.action.scaledDown)
+				values, err := vp.GetControlPlaneChartValues(ctx, data.action.cp, decodedCluster, fakeSecretsManager, map[string]string{}, data.action.scaledDown)
 
 				if data.expect.errToHaveOccurred {
 					Expect(err).To(HaveOccurred())
@@ -119,14 +126,14 @@ var _ = Describe("ValuesProvider", func() {
 							return errors.New("global is missing")
 						}
 
-						value, ok := mapValue["useTokenRequestor"]
-						if !ok || value != true {
-							return fmt.Errorf("%q is invalid for global.useTokenRequestor", value)
+						value, ok := mapValue["genericTokenKubeconfigSecretName"]
+						if !ok || value != mock.TestClusterGenericTokenKubeconfigSecretName {
+							return fmt.Errorf("%q is invalid for global.genericTokenKubeconfigSecretName", value)
 						}
 
-						mapValue, ok = mapValues["ionos-cloud-controller-manager"].(map[string]interface{})
+						mapValue, ok = mapValues["cloud-controller-manager"].(map[string]interface{})
 						if !ok {
-							return errors.New("ionos-cloud-controller-manager is missing")
+							return errors.New("cloud-controller-manager is missing")
 						}
 
 						value, ok = mapValue["podDatacenterID"]
@@ -134,9 +141,9 @@ var _ = Describe("ValuesProvider", func() {
 							return errors.New(fmt.Sprintf("%q is invalid for ionos-cloud-controller-manager.podDatacenterID", value))
 						}
 
-						mapValue, ok = mapValues["csi-ionos"].(map[string]interface{})
+						mapValue, ok = mapValues["ionos-csi-controller"].(map[string]interface{})
 						if !ok {
-							return errors.New("csi-ionos is missing")
+							return errors.New("ionos-csi-controller is missing")
 						}
 
 						value, ok = mapValue["csiDatacenterID"]

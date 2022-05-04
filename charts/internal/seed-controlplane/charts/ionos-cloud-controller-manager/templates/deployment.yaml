@@ -35,7 +35,6 @@ spec:
     spec:
       automountServiceAccountToken: false
       volumes:
-      {{- if .Values.global.useTokenRequestor }}
       - name: kubeconfig
         projected:
           defaultMode: 420
@@ -44,7 +43,7 @@ spec:
               items:
                 - key: kubeconfig
                   path: kubeconfig
-              name: generic-token-kubeconfig
+              name: {{ .Values.global.genericTokenKubeconfigSecretName }}
               optional: false
           - secret:
               items:
@@ -52,14 +51,9 @@ spec:
                   path: token
               name: shoot-access-cloud-controller-manager
               optional: false
-      {{- else }}
-      - name: cloud-controller-manager
-        secret:
-          secretName: cloud-controller-manager
-      {{- end }}
       - name: cloud-controller-manager-server
         secret:
-          secretName: cloud-controller-manager-server
+          secretName: {{ .Values.serverSecretName }}
       - name: cloud-provider-config
         configMap:
           name: cloud-provider-config
@@ -71,20 +65,14 @@ spec:
             path: {{ .Values.podDatacenterID | quote }}
       containers:
       - image: {{ index .Values.images "ionos-cloud-controller-manager" }}
-        name: ionos-cloud-controller-manager
+        name: cloud-controller-manager
         command: [ "/app/ionos-ccm" ]
         args:
         - --cloud-provider=ionos
         {{- include "cloud-controller-manager.featureGates" . | trimSuffix "," | indent 8 }}
-        {{- if .Values.global.useTokenRequestor }}
         - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
         - --authentication-kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
         - --authorization-kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
-        {{- else }}
-        - --kubeconfig=/var/lib/cloud-controller-manager/kubeconfig
-        - --authentication-kubeconfig=/var/lib/cloud-controller-manager/kubeconfig
-        - --authorization-kubeconfig=/var/lib/cloud-controller-manager/kubeconfig
-        {{- end }}
         - --concurrent-service-syncs=3
         - --node-monitor-period=20s
         - --leader-elect=true
@@ -92,8 +80,8 @@ spec:
         - --secure-port={{ include "cloud-controller-manager.port" . }}
         - --port=0
         {{- end }}
-        - --tls-cert-file=/var/lib/cloud-controller-manager-server/cloud-controller-manager-server.crt
-        - --tls-private-key-file=/var/lib/cloud-controller-manager-server/cloud-controller-manager-server.key
+        - --tls-cert-file=/var/lib/cloud-controller-manager-server/tls.crt
+        - --tls-private-key-file=/var/lib/cloud-controller-manager-server/tls.key
         - --tls-cipher-suites={{ .Values.tlsCipherSuites | join "," }}
         - --use-service-account-credentials
         env:
@@ -130,14 +118,9 @@ spec:
 {{ toYaml .Values.resources | indent 10 }}
         {{- end }}
         volumeMounts:
-        {{- if .Values.global.useTokenRequestor }}
         - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
           name: kubeconfig
           readOnly: true
-        {{- else }}
-        - name: cloud-controller-manager
-          mountPath: /var/lib/cloud-controller-manager
-        {{- end }}
         - name: cloud-controller-manager-server
           mountPath: /var/lib/cloud-controller-manager-server
         - name: cloud-provider-config
