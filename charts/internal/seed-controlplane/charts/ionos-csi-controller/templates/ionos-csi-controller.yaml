@@ -117,8 +117,9 @@ spec:
           volumeMounts:
           - mountPath: /var/lib/csi/sockets/pluginproxy/
             name: socket-dir
-          - name: ionos-csi-controller
-            mountPath: /var/lib/ionos-csi-controller
+          - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+            name: kubeconfig-csi-driver
+            readOnly: true
           - mountPath: /etc/ie-csi
             name: ie-csi-dir
             readOnly: true
