@@ -144,6 +144,9 @@ func (e *ensurer) EnsureKubeletConfiguration(ctx context.Context, gctx gcontext.
 		new.EnableControllerAttachDetach = pointer.Bool(true)
 	}
 
+	// IONOS machines may use swap
+	new.FailSwapOn = pointer.Bool(false)
+
 	return nil
 }
 
