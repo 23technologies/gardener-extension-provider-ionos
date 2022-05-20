@@ -51,6 +51,8 @@ type DHCPServerConfiguration struct {
 	UserData string        `json:"userData"`
 
 	//
+	SSHKey   string  `json:"sshKey,omitempty"`
+	//
 	Password   string  `json:"password,omitempty"`
 	// Volume size
 	VolumeSize float32 `json:"volumeSize,omitempty"`

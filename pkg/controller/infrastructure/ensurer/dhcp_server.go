@@ -96,6 +96,11 @@ func createDHCPServer(ctx context.Context, client *ionossdk.APIClient, datacente
 		UserData: &userDataBase64Encoded,
 	}
 
+	if configuration.SSHKey != "" {
+		sshKeys := []string{fmt.Sprintf("%s\n", configuration.SSHKey)}
+		volumeProperties.SshKeys = &sshKeys
+	}
+
 	volumeApiCreateRequest := client.VolumeApi.DatacentersVolumesPost(ctx, datacenterID).Depth(0)
 	volume, _, err := volumeApiCreateRequest.Volume(ionossdk.Volume{Properties: &volumeProperties}).Execute()
 	if nil != err {

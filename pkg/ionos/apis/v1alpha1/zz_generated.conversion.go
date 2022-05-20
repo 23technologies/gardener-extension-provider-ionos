@@ -325,6 +325,7 @@ func autoConvert_v1alpha1_DHCPServerConfiguration_To_apis_DHCPServerConfiguratio
 	out.Memory = in.Memory
 	out.IP = in.IP
 	out.UserData = in.UserData
+	out.SSHKey = in.SSHKey
 	out.Password = in.Password
 	out.VolumeSize = in.VolumeSize
 	return nil
@@ -341,6 +342,7 @@ func autoConvert_apis_DHCPServerConfiguration_To_v1alpha1_DHCPServerConfiguratio
 	out.Memory = in.Memory
 	out.IP = in.IP
 	out.UserData = in.UserData
+	out.SSHKey = in.SSHKey
 	out.Password = in.Password
 	out.VolumeSize = in.VolumeSize
 	return nil
