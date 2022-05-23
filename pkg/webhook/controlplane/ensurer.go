@@ -115,7 +115,7 @@ func (e *ensurer) EnsureKubeletServiceUnitOptions(ctx context.Context, gctx gcon
 	new = extensionswebhook.EnsureUnitOption(new, &unit.UnitOption{
 		Section: "Service",
 		Name:    "ExecStartPre",
-		Value:   `/bin/sh -c 'hostnamectl set-hostname $(uuidgen)'`,
+		Value:   `/bin/sh -c 'hostnamectl set-hostname $(cat /etc/hostname | cut -d '.' -f 1)'`,
 	})
 	return new, nil
 }

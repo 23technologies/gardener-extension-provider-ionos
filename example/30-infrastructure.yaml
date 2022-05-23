@@ -82,7 +82,7 @@ spec:
         version: "20.04"
       cores: 1
       memory: 1024
-      ip: 10.15.100.254
+      ip: 10.15.100.253
       userData: |-
         #cloud-config
         runcmd:
@@ -113,8 +113,9 @@ spec:
             bogus-priv
             listen-address=127.0.0.1
             listen-address=::1
-            listen-address=10.15.100.254
-            dhcp-range=set:workers,10.15.100.0,10.15.100.253,24h
+            listen-address=10.15.100.253
+            dhcp-range=set:workers,10.15.100.0,10.15.100.252,24h
+            dhcp-ignore-names=tag:workers
             dhcp-option=tag:workers,option:router
       volumeSize: 10737418240
     floatingPool:
