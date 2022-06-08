@@ -115,31 +115,33 @@ func (a *actuator) reconcileOnErrorCleanup(ctx context.Context, infra *extension
 	infraStatus, _ := transcoder.DecodeInfrastructureStatusFromInfrastructure(infra)
 	resultData := ctx.Value(controller.CtxWrapDataKey("MethodData")).(*controller.InfrastructureReconcileMethodData)
 
-	client := ionosapiwrapper.GetClientForUser(actuatorConfig.user, actuatorConfig.password)
+	if nil != actuatorConfig {
+		client := ionosapiwrapper.GetClientForUser(actuatorConfig.user, actuatorConfig.password)
 
-	isDeleted := false
+		isDeleted := false
 
-	if resultData.DatacenterID != "" {
-		ensurer.EnsureDatacenterDeleted(ctx, client, resultData.DatacenterID)
-		isDeleted = true
-	}
-
-	if !isDeleted {
-		if resultData.DHCPServerID != "" {
-			ensurer.EnsureDHCPServerDeleted(ctx, client, infraStatus.DatacenterID, resultData.DHCPServerID)
+		if resultData.DatacenterID != "" {
+			ensurer.EnsureDatacenterDeleted(ctx, client, resultData.DatacenterID)
+			isDeleted = true
 		}
 
-		if resultData.NetworkID != "" || resultData.WANID != "" {
-			networkIDs := &apis.NetworkIDs{
-				Workers: resultData.NetworkID,
-				WAN: resultData.WANID,
+		if !isDeleted {
+			if resultData.DHCPServerID != "" {
+				ensurer.EnsureDHCPServerDeleted(ctx, client, infraStatus.DatacenterID, resultData.DHCPServerID)
 			}
 
-			ensurer.EnsureNetworksDeleted(ctx, client, infraStatus.DatacenterID, networkIDs)
-		}
+			if resultData.NetworkID != "" || resultData.WANID != "" {
+				networkIDs := &apis.NetworkIDs{
+					Workers: resultData.NetworkID,
+					WAN: resultData.WANID,
+				}
 
-		if resultData.FloatingPoolID != "" {
-			ensurer.EnsureFloatingPoolDeleted(ctx, client, resultData.FloatingPoolID)
+				ensurer.EnsureNetworksDeleted(ctx, client, infraStatus.DatacenterID, networkIDs)
+			}
+
+			if resultData.FloatingPoolID != "" {
+				ensurer.EnsureFloatingPoolDeleted(ctx, client, resultData.FloatingPoolID)
+			}
 		}
 	}
 }
