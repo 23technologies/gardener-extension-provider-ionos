@@ -25,6 +25,6 @@ import (
 // GardenWebhookSwitchOptions are the webhookcmd.SwitchOptions for the admission webhooks.
 func webhookSwitchOptions() *webhookcmd.SwitchOptions {
 	return webhookcmd.NewSwitchOptions(
-          webhookcmd.Switch(validator.Name, validator.New),
+        webhookcmd.Switch(validator.Name, validator.New),
 	)
 }

@@ -31,7 +31,7 @@ import (
 	druidv1alpha1 "github.com/gardener/etcd-druid/api/v1alpha1"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
-  "github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
+    "github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
 	"github.com/gardener/gardener/extensions/pkg/controller/worker"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
@@ -95,7 +95,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 	controllerSwitches := controllerSwitchOptions()
 	webhookSwitches    := webhookSwitchOptions()
 
-  webhookOptions     := webhookcmd.NewAddToManagerOptions(ionos.Name,
+    webhookOptions     := webhookcmd.NewAddToManagerOptions(ionos.Name,
 		genericactuator.ShootWebhooksResourceName,
 		genericactuator.ShootWebhookNamespaceSelector(ionos.Type),
 		webhookServerOptions,
@@ -176,7 +176,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			reconcileOpts.Completed().Apply(&ionosworker.DefaultAddOptions.IgnoreOperationAnnotation)
 			workerCtrlOpts.Completed().Apply(&ionosworker.DefaultAddOptions.Controller)
 
-      if _, err := webhookOptions.Completed().AddToManager(ctx, mgr); err != nil {
+		    if _, err := webhookOptions.Completed().AddToManager(ctx, mgr); err != nil {
 				return fmt.Errorf("Could not add webhooks to manager: %w", err)
 			}
 
